@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogos do Vitor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 3rem;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 300% 300%;
+            animation: gradientMove 4s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.85);
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 40px;
+            font-weight: 600;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .game-card.twister::before {
+            background: linear-gradient(90deg, #e44d26, #1e90ff, #f7df1e, #2ed573);
+        }
+
+        .game-card.ludo::before {
+            background: linear-gradient(90deg, #e74c3c, #3498db, #f1c40f, #2ecc71);
+        }
+
+        .game-card.velha::before {
+            background: linear-gradient(90deg, #667eea, #ee5a24, #667eea, #ee5a24);
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-card:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        .game-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .game-card h2 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .game-card.twister h2 {
+            color: #764ba2;
+        }
+
+        .game-card.ludo h2 {
+            color: #e74c3c;
+        }
+
+        .game-card.velha h2 {
+            color: #667eea;
+        }
+
+        .game-card p {
+            color: #666;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .badge {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .game-card.twister .badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .game-card.ludo .badge {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .game-card.velha .badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        /* Floating circles background */
+        .bg-circle {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-circle:nth-child(1) { width: 200px; height: 200px; top: -50px; left: -50px; animation: float 8s ease-in-out infinite; }
+        .bg-circle:nth-child(2) { width: 150px; height: 150px; bottom: -30px; right: -30px; animation: float 10s ease-in-out infinite reverse; }
+        .bg-circle:nth-child(3) { width: 100px; height: 100px; top: 40%; left: 80%; animation: float 7s ease-in-out infinite; }
+        .bg-circle:nth-child(4) { width: 180px; height: 180px; top: 60%; left: -40px; animation: float 9s ease-in-out infinite reverse; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .games-grid { gap: 20px; }
+            .game-card { padding: 30px 20px; }
+            .game-icon { font-size: 3.5rem; }
+            .game-card h2 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+
+    <div class="content">
+        <h1>🎮 Jogos do Vitor</h1>
+        <p class="subtitle">Escolha um jogo para se divertir!</p>
+
+        <div class="games-grid">
+            <a href="twister.html" class="game-card twister">
+                <span class="game-icon">🌀</span>
+                <h2>Twister</h2>
+                <p>Gire a roleta e coloque mãos e pés nas cores certas! De 2 a 8 jogadores.</p>
+                <span class="badge">2-8 Jogadores</span>
+            </a>
+
+            <a href="ludo.html" class="game-card ludo">
+                <span class="game-icon">🎲</span>
+                <h2>Ludo</h2>
+                <p>O clássico jogo de tabuleiro! Lance o dado e leve suas peças até o final.</p>
+                <span class="badge">2-4 Jogadores</span>
+            </a>
+
+            <a href="velha.html" class="game-card velha">
+                <span class="game-icon">❌⭕</span>
+                <h2>Jogo da Velha</h2>
+                <p>Desafie um amigo ou enfrente o computador no clássico jogo da velha!</p>
+                <span class="badge">1-2 Jogadores</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

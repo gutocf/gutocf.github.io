@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Velha</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* === FLOATING BG === */
+        .bg-circle {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-circle:nth-child(1) { width: 200px; height: 200px; top: -50px; left: -50px; animation: float 8s ease-in-out infinite; }
+        .bg-circle:nth-child(2) { width: 150px; height: 150px; bottom: -30px; right: -30px; animation: float 10s ease-in-out infinite reverse; }
+        .bg-circle:nth-child(3) { width: 100px; height: 100px; top: 40%; left: 80%; animation: float 7s ease-in-out infinite; }
+        .bg-circle:nth-child(4) { width: 180px; height: 180px; top: 60%; left: -40px; animation: float 9s ease-in-out infinite reverse; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === MENU SCREEN === */
+        #menu-screen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .menu-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 3rem;
+            color: #fff;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            margin-bottom: 8px;
+        }
+
+        .menu-subtitle {
+            color: rgba(255,255,255,0.85);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        .menu-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .menu-card h2 {
+            font-family: 'Fredoka One', cursive;
+            color: #764ba2;
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+        }
+
+        .mode-btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: none;
+            border-radius: 16px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .mode-btn:active {
+            transform: translateY(0);
+        }
+
+        .mode-btn.solo {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .mode-btn.duo {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-weight: 700;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        /* === GAME SCREEN === */
+        #game-screen {
+            display: none;
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 0.4s ease;
+        }
+
+        #game-screen.active {
+            display: flex;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-header h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2.2rem;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 4px;
+        }
+
+        .game-info {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .status {
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 12px 28px;
+            margin-bottom: 20px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.3rem;
+            color: #764ba2;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            min-width: 240px;
+            text-align: center;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 340px;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Fredoka One', cursive;
+            font-size: 3.5rem;
+            color: #764ba2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+        }
+
+        .cell:hover:not(.taken):not(.game-over) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            background: #fff;
+        }
+
+        .cell:active:not(.taken):not(.game-over) {
+            transform: translateY(0);
+        }
+
+        .cell.taken {
+            cursor: default;
+        }
+
+        .cell.game-over {
+            cursor: default;
+        }
+
+        .cell.x {
+            color: #667eea;
+        }
+
+        .cell.o {
+            color: #ee5a24;
+        }
+
+        .cell.win {
+            background: #feca57;
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(254, 202, 87, 0.5);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .cell.animate {
+            animation: pop 0.3s ease;
+        }
+
+        .scoreboard {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .score-item {
+            background: rgba(255,255,255,0.9);
+            border-radius: 14px;
+            padding: 10px 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            min-width: 90px;
+        }
+
+        .score-item .label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .score-item .value {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.6rem;
+            color: #764ba2;
+        }
+
+        .score-item.x-score .value { color: #667eea; }
+        .score-item.o-score .value { color: #ee5a24; }
+        .score-item.draw-score .value { color: #888; }
+
+        .game-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .game-btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+        }
+
+        .game-btn.restart {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .game-btn.menu {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
+        .difficulty-selector {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .diff-btn {
+            padding: 8px 18px;
+            border: 3px solid rgba(255,255,255,0.5);
+            border-radius: 12px;
+            background: transparent;
+            color: rgba(255,255,255,0.8);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .diff-btn:hover {
+            border-color: #fff;
+            color: #fff;
+        }
+
+        .diff-btn.active {
+            background: rgba(255,255,255,0.95);
+            color: #764ba2;
+            border-color: rgba(255,255,255,0.95);
+        }
+
+        @media (max-width: 480px) {
+            .menu-title { font-size: 2.2rem; }
+            .menu-card { padding: 28px 20px; }
+            .board { max-width: 280px; gap: 8px; }
+            .cell { font-size: 2.8rem; border-radius: 12px; }
+            .game-header h1 { font-size: 1.8rem; }
+            .status { font-size: 1.1rem; padding: 10px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+
+    <!-- MENU -->
+    <div id="menu-screen">
+        <div class="menu-title">❌⭕ Jogo da Velha</div>
+        <p class="menu-subtitle">Escolha o modo de jogo</p>
+
+        <div class="menu-card">
+            <h2>Como quer jogar?</h2>
+            <button class="mode-btn solo" onclick="startGame('solo')">
+                1 Jogador (vs Computador)
+            </button>
+            <button class="mode-btn duo" onclick="startGame('duo')">
+                2 Jogadores
+            </button>
+        </div>
+
+        <a href="index.html" class="back-link">Voltar aos Jogos</a>
+    </div>
+
+    <!-- GAME -->
+    <div id="game-screen">
+        <div class="game-header">
+            <h1>❌⭕ Jogo da Velha</h1>
+            <p class="game-info" id="game-info"></p>
+        </div>
+
+        <div class="difficulty-selector" id="difficulty-selector" style="display:none;">
+            <button class="diff-btn" data-diff="easy" onclick="setDifficulty('easy')">Facil</button>
+            <button class="diff-btn active" data-diff="medium" onclick="setDifficulty('medium')">Medio</button>
+            <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">Impossivel</button>
+        </div>
+
+        <div class="status" id="status">Vez do X</div>
+
+        <div class="scoreboard">
+            <div class="score-item x-score">
+                <div class="label" id="x-label">X</div>
+                <div class="value" id="x-score">0</div>
+            </div>
+            <div class="score-item draw-score">
+                <div class="label">Empate</div>
+                <div class="value" id="draw-score">0</div>
+            </div>
+            <div class="score-item o-score">
+                <div class="label" id="o-label">O</div>
+                <div class="value" id="o-score">0</div>
+            </div>
+        </div>
+
+        <div class="board" id="board">
+            <button class="cell" data-index="0" onclick="handleClick(0)"></button>
+            <button class="cell" data-index="1" onclick="handleClick(1)"></button>
+            <button class="cell" data-index="2" onclick="handleClick(2)"></button>
+            <button class="cell" data-index="3" onclick="handleClick(3)"></button>
+            <button class="cell" data-index="4" onclick="handleClick(4)"></button>
+            <button class="cell" data-index="5" onclick="handleClick(5)"></button>
+            <button class="cell" data-index="6" onclick="handleClick(6)"></button>
+            <button class="cell" data-index="7" onclick="handleClick(7)"></button>
+            <button class="cell" data-index="8" onclick="handleClick(8)"></button>
+        </div>
+
+        <div class="game-buttons">
+            <button class="game-btn restart" onclick="resetBoard()">Nova Rodada</button>
+            <button class="game-btn menu" onclick="backToMenu()">Menu</button>
+        </div>
+    </div>
+
+    <script>
+        // ====== STATE ======
+        let board = Array(9).fill(null);
+        let currentPlayer = 'X';
+        let gameMode = 'duo'; // 'solo' or 'duo'
+        let difficulty = 'medium'; // 'easy', 'medium', 'hard'
+        let gameActive = true;
+        let scores = { X: 0, O: 0, draw: 0 };
+        let aiThinking = false;
+
+        const WIN_COMBOS = [
+            [0,1,2],[3,4,5],[6,7,8],
+            [0,3,6],[1,4,7],[2,5,8],
+            [0,4,8],[2,4,6]
+        ];
+
+        // ====== UI REFS ======
+        const cells = document.querySelectorAll('.cell');
+        const statusEl = document.getElementById('status');
+        const menuScreen = document.getElementById('menu-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const diffSelector = document.getElementById('difficulty-selector');
+        const gameInfo = document.getElementById('game-info');
+
+        // ====== MENU ======
+        function startGame(mode) {
+            gameMode = mode;
+            menuScreen.style.display = 'none';
+            gameScreen.classList.add('active');
+
+            if (mode === 'solo') {
+                diffSelector.style.display = 'flex';
+                gameInfo.textContent = 'Voce e o X, computador e o O';
+                document.getElementById('x-label').textContent = 'Voce (X)';
+                document.getElementById('o-label').textContent = 'PC (O)';
+            } else {
+                diffSelector.style.display = 'none';
+                gameInfo.textContent = '2 Jogadores';
+                document.getElementById('x-label').textContent = 'Jogador X';
+                document.getElementById('o-label').textContent = 'Jogador O';
+            }
+
+            scores = { X: 0, O: 0, draw: 0 };
+            updateScoreboard();
+            resetBoard();
+        }
+
+        function backToMenu() {
+            gameScreen.classList.remove('active');
+            menuScreen.style.display = '';
+        }
+
+        function setDifficulty(diff) {
+            difficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.diff === diff);
+            });
+            resetBoard();
+        }
+
+        // ====== GAME LOGIC ======
+        function handleClick(index) {
+            if (!gameActive || board[index] || aiThinking) return;
+
+            makeMove(index, currentPlayer);
+
+            const result = checkWin();
+            if (result) {
+                endRound(result);
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            updateStatus();
+
+            if (gameMode === 'solo' && currentPlayer === 'O' && gameActive) {
+                aiThinking = true;
+                setTimeout(() => {
+                    const aiMove = getBestMove();
+                    makeMove(aiMove, 'O');
+                    const res = checkWin();
+                    if (res) {
+                        endRound(res);
+                    } else {
+                        currentPlayer = 'X';
+                        updateStatus();
+                    }
+                    aiThinking = false;
+                }, 300);
+            }
+        }
+
+        function makeMove(index, player) {
+            board[index] = player;
+            const cell = cells[index];
+            cell.textContent = player === 'X' ? '✕' : '◯';
+            cell.classList.add('taken', player.toLowerCase(), 'animate');
+        }
+
+        function checkWin() {
+            for (const combo of WIN_COMBOS) {
+                const [a, b, c] = combo;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return { winner: board[a], combo };
+                }
+            }
+            if (board.every(cell => cell !== null)) {
+                return { winner: 'draw', combo: null };
+            }
+            return null;
+        }
+
+        function endRound(result) {
+            gameActive = false;
+
+            if (result.winner === 'draw') {
+                scores.draw++;
+                statusEl.textContent = 'Empate!';
+            } else {
+                scores[result.winner]++;
+                if (result.combo) {
+                    result.combo.forEach(i => cells[i].classList.add('win'));
+                }
+                if (gameMode === 'solo') {
+                    statusEl.textContent = result.winner === 'X' ? 'Voce venceu!' : 'Computador venceu!';
+                } else {
+                    statusEl.textContent = `Jogador ${result.winner} venceu!`;
+                }
+            }
+
+            cells.forEach(c => c.classList.add('game-over'));
+            updateScoreboard();
+        }
+
+        function resetBoard() {
+            board = Array(9).fill(null);
+            currentPlayer = 'X';
+            gameActive = true;
+            aiThinking = false;
+            cells.forEach(c => {
+                c.textContent = '';
+                c.className = 'cell';
+            });
+            updateStatus();
+        }
+
+        function updateStatus() {
+            if (gameMode === 'solo') {
+                statusEl.textContent = currentPlayer === 'X' ? 'Sua vez!' : 'Computador pensando...';
+            } else {
+                statusEl.textContent = `Vez do ${currentPlayer}`;
+            }
+        }
+
+        function updateScoreboard() {
+            document.getElementById('x-score').textContent = scores.X;
+            document.getElementById('o-score').textContent = scores.O;
+            document.getElementById('draw-score').textContent = scores.draw;
+        }
+
+        // ====== AI - MINIMAX com ALPHA-BETA ======
+        function getBestMove() {
+            if (difficulty === 'easy') {
+                return getRandomMove();
+            }
+            if (difficulty === 'medium') {
+                return Math.random() < 0.4 ? getRandomMove() : minimaxBest();
+            }
+            return minimaxBest();
+        }
+
+        function getRandomMove() {
+            const available = [];
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) available.push(i);
+            }
+            return available[Math.floor(Math.random() * available.length)];
+        }
+
+        function minimaxBest() {
+            const empty = [];
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) empty.push(i);
+            }
+
+            // Se pode ganhar agora, ganha
+            for (const pos of empty) {
+                board[pos] = 'O';
+                if (getWinner(board) === 'O') { board[pos] = null; return pos; }
+                board[pos] = null;
+            }
+
+            // Se precisa bloquear, bloqueia
+            for (const pos of empty) {
+                board[pos] = 'X';
+                if (getWinner(board) === 'X') { board[pos] = null; return pos; }
+                board[pos] = null;
+            }
+
+            // Minimax completo com alpha-beta pruning
+            let bestScore = -Infinity;
+            let bestMove = empty[0];
+
+            for (const pos of empty) {
+                board[pos] = 'O';
+                const score = minimax(false, 0, -Infinity, Infinity);
+                board[pos] = null;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = pos;
+                }
+            }
+            return bestMove;
+        }
+
+        function minimax(isMaximizing, depth, alpha, beta) {
+            const winner = getWinner(board);
+            if (winner === 'O') return 100 - depth;
+            if (winner === 'X') return depth - 100;
+
+            const empty = [];
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) empty.push(i);
+            }
+            if (empty.length === 0) return 0;
+
+            if (isMaximizing) {
+                let best = -Infinity;
+                for (const pos of empty) {
+                    board[pos] = 'O';
+                    const score = minimax(false, depth + 1, alpha, beta);
+                    board[pos] = null;
+                    best = Math.max(best, score);
+                    alpha = Math.max(alpha, best);
+                    if (beta <= alpha) break;
+                }
+                return best;
+            } else {
+                let best = Infinity;
+                for (const pos of empty) {
+                    board[pos] = 'X';
+                    const score = minimax(true, depth + 1, alpha, beta);
+                    board[pos] = null;
+                    best = Math.min(best, score);
+                    beta = Math.min(beta, best);
+                    if (beta <= alpha) break;
+                }
+                return best;
+            }
+        }
+
+        function getWinner(b) {
+            for (let i = 0; i < WIN_COMBOS.length; i++) {
+                const a = WIN_COMBOS[i][0];
+                const m = WIN_COMBOS[i][1];
+                const c = WIN_COMBOS[i][2];
+                if (b[a] && b[a] === b[m] && b[a] === b[c]) return b[a];
+            }
+            return null;
+        }
+    </script>
+</body>
+</html>
