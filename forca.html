@@ -227,11 +227,17 @@
         /* === KEYBOARD === */
         .keyboard {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
+            align-items: center;
             gap: 6px;
             max-width: 500px;
-            justify-content: center;
             margin-bottom: 20px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
         }
 
         .key-btn {
@@ -664,18 +670,23 @@
         // ====== RENDER KEYBOARD ======
         function renderKeyboard() {
             keyboardEl.innerHTML = '';
-            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            for (const letter of letters) {
-                const btn = document.createElement('button');
-                btn.className = 'key-btn';
-                btn.textContent = letter;
-                btn.onclick = () => guessLetter(letter);
-                if (guessedLetters.has(letter)) {
-                    btn.disabled = true;
-                    const wordNormalized = [...currentWord].map(c => normalize(c));
-                    btn.classList.add(wordNormalized.includes(letter) ? 'correct' : 'wrong');
+            const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+            const wordNormalized = [...currentWord].map(c => normalize(c));
+            for (const row of rows) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'keyboard-row';
+                for (const letter of row) {
+                    const btn = document.createElement('button');
+                    btn.className = 'key-btn';
+                    btn.textContent = letter;
+                    btn.onclick = () => guessLetter(letter);
+                    if (guessedLetters.has(letter)) {
+                        btn.disabled = true;
+                        btn.classList.add(wordNormalized.includes(letter) ? 'correct' : 'wrong');
+                    }
+                    rowDiv.appendChild(btn);
                 }
-                keyboardEl.appendChild(btn);
+                keyboardEl.appendChild(rowDiv);
             }
         }
 
