@@ -97,6 +97,10 @@
             background: linear-gradient(90deg, #667eea, #ee5a24, #667eea, #ee5a24);
         }
 
+        .game-card.forca::before {
+            background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c, #2ecc71);
+        }
+
         .game-card:hover {
             transform: translateY(-8px) scale(1.02);
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
@@ -130,6 +134,10 @@
             color: #667eea;
         }
 
+        .game-card.forca h2 {
+            color: #2ecc71;
+        }
+
         .game-card p {
             color: #666;
             font-size: 1rem;
@@ -156,6 +164,10 @@
 
         .game-card.velha .badge {
             background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .game-card.forca .badge {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
         }
 
         /* Floating circles background */
@@ -225,6 +237,13 @@
                 <h2>Jogo da Velha</h2>
                 <p>Desafie um amigo ou enfrente o computador no clássico jogo da velha!</p>
                 <span class="badge">1-2 Jogadores</span>
+            </a>
+
+            <a href="forca.html" class="game-card forca">
+                <span class="game-icon">🪢</span>
+                <h2>Jogo da Forca</h2>
+                <p>Descubra a palavra secreta antes que o boneco seja enforcado!</p>
+                <span class="badge">1 Jogador</span>
             </a>
         </div>
     </div>

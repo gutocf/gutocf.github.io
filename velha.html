@@ -380,9 +380,9 @@
         </div>
 
         <div class="difficulty-selector" id="difficulty-selector" style="display:none;">
-            <button class="diff-btn" data-diff="easy" onclick="setDifficulty('easy')">Facil</button>
-            <button class="diff-btn active" data-diff="medium" onclick="setDifficulty('medium')">Medio</button>
-            <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">Impossivel</button>
+            <button class="diff-btn" data-diff="easy" onclick="setDifficulty('easy')">Fácil</button>
+            <button class="diff-btn active" data-diff="medium" onclick="setDifficulty('medium')">Médio</button>
+            <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">Impossível</button>
         </div>
 
         <div class="status" id="status">Vez do X</div>
@@ -452,8 +452,8 @@
 
             if (mode === 'solo') {
                 diffSelector.style.display = 'flex';
-                gameInfo.textContent = 'Voce e o X, computador e o O';
-                document.getElementById('x-label').textContent = 'Voce (X)';
+                gameInfo.textContent = 'Você é o X, computador é o O';
+                document.getElementById('x-label').textContent = 'Você (X)';
                 document.getElementById('o-label').textContent = 'PC (O)';
             } else {
                 diffSelector.style.display = 'none';
@@ -544,7 +544,7 @@
                     result.combo.forEach(i => cells[i].classList.add('win'));
                 }
                 if (gameMode === 'solo') {
-                    statusEl.textContent = result.winner === 'X' ? 'Voce venceu!' : 'Computador venceu!';
+                    statusEl.textContent = result.winner === 'X' ? 'Você venceu!' : 'Computador venceu!';
                 } else {
                     statusEl.textContent = `Jogador ${result.winner} venceu!`;
                 }
