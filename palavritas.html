@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palavritas</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bg-circle {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-circle:nth-child(1) { width: 200px; height: 200px; top: -50px; left: -50px; animation: float 8s ease-in-out infinite; }
+        .bg-circle:nth-child(2) { width: 150px; height: 150px; bottom: -30px; right: -30px; animation: float 10s ease-in-out infinite reverse; }
+        .bg-circle:nth-child(3) { width: 100px; height: 100px; top: 40%; left: 80%; animation: float 7s ease-in-out infinite; }
+        .bg-circle:nth-child(4) { width: 180px; height: 180px; top: 60%; left: -40px; animation: float 9s ease-in-out infinite reverse; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            width: 100%;
+            max-width: 500px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 8px;
+            margin-top: 10px;
+        }
+
+        .game-header h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2.2rem;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 4px;
+        }
+
+        .game-date {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        /* === GRID === */
+        .grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .tile {
+            width: 58px;
+            height: 58px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.8rem;
+            color: #fff;
+            text-transform: uppercase;
+            transition: transform 0.1s;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .tile.filled {
+            border-color: rgba(255,255,255,0.6);
+            animation: popTile 0.1s ease;
+        }
+
+        .tile.current-row {
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        @keyframes popTile {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes flipIn {
+            0% { transform: rotateX(0); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0); }
+        }
+
+        .tile.reveal {
+            animation: flipIn 0.5s ease;
+        }
+
+        .tile.correct {
+            background: #2ecc71;
+            border-color: #2ecc71;
+        }
+
+        .tile.present {
+            background: #f1c40f;
+            border-color: #f1c40f;
+        }
+
+        .tile.absent {
+            background: #7f8c8d;
+            border-color: #7f8c8d;
+        }
+
+        /* === MESSAGE === */
+        .message {
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .message-text {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 8px 20px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1rem;
+            color: #764ba2;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: none;
+        }
+
+        .message-text.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message-text.error { color: #e74c3c; }
+        .message-text.win { color: #2ecc71; }
+
+        /* === KEYBOARD === */
+        .keyboard {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 12px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .key-btn {
+            min-width: 34px;
+            height: 50px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.95);
+            font-family: 'Fredoka One', cursive;
+            font-size: 1rem;
+            color: #764ba2;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .key-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        .key-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .key-btn.wide {
+            min-width: 58px;
+            font-size: 0.8rem;
+        }
+
+        .key-btn.correct {
+            background: #2ecc71;
+            color: #fff;
+        }
+
+        .key-btn.present {
+            background: #f1c40f;
+            color: #fff;
+        }
+
+        .key-btn.absent {
+            background: #7f8c8d;
+            color: #fff;
+        }
+
+        /* === BUTTONS === */
+        .game-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .game-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+        }
+
+        .game-btn.share { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .game-btn.back { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
+        .game-btn.new-game { background: linear-gradient(135deg, #3498db, #2980b9); }
+
+        /* === RESULT OVERLAY === */
+        .result-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .result-overlay.active {
+            display: flex;
+        }
+
+        .result-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 36px;
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .result-card .result-icon {
+            font-size: 3.5rem;
+            margin-bottom: 8px;
+        }
+
+        .result-card h2 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.6rem;
+            margin-bottom: 6px;
+        }
+
+        .result-card h2.win-text { color: #2ecc71; }
+        .result-card h2.lose-text { color: #e74c3c; }
+
+        .result-card p {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .result-card .share-preview {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 12px 0;
+            font-family: monospace;
+            font-size: 1.2rem;
+            line-height: 1.5;
+            white-space: pre-line;
+            text-align: center;
+        }
+
+        .result-card .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .result-card .game-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.05rem;
+        }
+
+        .copied-toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            z-index: 200;
+            display: none;
+        }
+
+        .copied-toast.visible {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+
+        .row.shake {
+            animation: shake 0.4s ease;
+        }
+
+        @media (max-width: 400px) {
+            .tile { width: 50px; height: 50px; font-size: 1.5rem; }
+            .key-btn { min-width: 28px; height: 44px; font-size: 0.85rem; padding: 0 5px; }
+            .key-btn.wide { min-width: 46px; }
+            .game-header h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+
+    <div class="container">
+        <div class="game-header">
+            <h1>🔤 Palavritas</h1>
+            <p class="game-date" id="game-date"></p>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <div class="message">
+            <div class="message-text" id="message"></div>
+        </div>
+
+        <div class="keyboard" id="keyboard"></div>
+
+        <div class="game-buttons">
+            <a href="index.html" class="game-btn back">Voltar</a>
+        </div>
+    </div>
+
+    <div class="result-overlay" id="result-overlay">
+        <div class="result-card" id="result-card">
+            <div class="result-icon" id="result-icon"></div>
+            <h2 id="result-title"></h2>
+            <p id="result-message"></p>
+            <div class="share-preview" id="share-preview"></div>
+            <div class="btn-group">
+                <button class="game-btn share" id="share-btn" onclick="shareResult()">Compartilhar resultado</button>
+                <button class="game-btn new-game" onclick="closeResult(); newRandomGame();">Jogar com palavra aleatoria</button>
+                <button class="game-btn back" onclick="closeResult();">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="copied-toast" id="copied-toast">Copiado!</div>
+
+    <script>
+        // ====== WORD LIST (5-letter Portuguese words, no accents) ======
+        const VALID_WORDS = [
+            "abaco","abade","abafa","abana","abate","abeto","abism","abiso","abita","abobe",
+            "abole","abona","abord","abras","abrem","abrir","abriu","abusa","acaba","acafo",
+            "acalm","acama","acaso","acata","acena","acend","acent","acera","acert","acesa",
+            "aceso","acham","achar","achou","acida","acido","acima","acite","acode","acomp",
+            "acord","acost","acred","acude","acufa","acume","acusa","adapt","adega","adera",
+            "adere","adeus","adiar","adiou","admir","admit","adobe","adoce","adore","adota",
+            "adult","advir","aerea","aereo","afaga","afago","afano","afara","afere","afeta",
+            "afeto","afiam","afiar","afila","afina","afins","afira","afixa","afixo","aflui",
+            "afoga","afora","agaio","agape","agave","ageis","agiam","agida","agido","agita",
+            "agito","agora","agrao","aguda","agudo","aguia","ainda","ajuda","ajude","ajudo",
+            "alado","alaga","alama","alamo","alaio","alard","alarm","alaze","album","alcan",
+            "aldea","alega","alegr","aleia","aleij","alema","alemo","alert","alfim","algum",
+            "algoz","algum","alien","alima","aliou","alisa","aliva","alivi","alivs","alixa",
+            "aloca","aloja","altar","alter","altiv","altos","aluga","aluno","alura","alvar",
+            "alvos","amada","amado","amago","amais","amala","amame","amana","amane","amanh",
+            "amara","amava","ambar","ambas","ambos","ameba","amena","ameno","amiga","amigo",
+            "amora","amort","ampla","amplo","amuar","anais","anali","andar","andei","andou",
+            "aneis","anela","anfia","anfio","angar","anglo","angra","angul","anhos","anila",
+            "anima","anime","animo","anist","anita","anjos","antes","antro","anual","anula",
+            "anulo","anuns","apaga","apago","apara","apego","apela","apelo","apena","apert",
+            "apice","apila","apita","apito","aplau","apoio","apora","apont","apoio","aport",
+            "aposa","apraz","apura","apuro","arabe","arada","arado","arame","arara","arcar",
+            "ardal","ardem","arder","ardil","arena","arfar","argel","argil","arido","ariel",
+            "armas","arnar","aroma","arpar","arque","arram","arras","arraz","arroz","artes",
+            "artil","asado","asilo","aspas","aspir","assai","assar","assaz","assem","assim",
+            "assoa","assom","assou","astro","ataca","ataco","atado","atais","atamo","ataqu",
+            "atear","ateia","ateia","ateia","atend","atenr","atent","atera","aterr","ateus",
+            "atice","atina","atira","ativo","atlas","atlaz","atola","atole","atomo","atore",
+            "atrai","atras","atual","atuar","atuou","audaz","aulas","aural","auspi","autor",
+            "avais","avali","avara","avaro","aveia","avela","avena","averm","avess","aviao",
+            "avida","avido","avisa","aviso","aviva","avivo","axila","azeda","azedo","aziar",
+            "azuis","babam","babar","babas","bacen","bacon","bacia","bacos","badal","bafao",
+            "bafos","bagre","baila","baile","baixa","baixo","balas","balao","balda","balde",
+            "baldo","balsa","bamba","bambu","banal","banca","banco","banda","bando","banho",
+            "banir","baniu","baque","barba","barca","barco","bardo","bares","barra","barro",
+            "basal","basca","bases","basta","basto","batam","bater","bateu","batom","bauru",
+            "bazar","beata","beato","bebam","beber","bebeu","becos","bedel","beija","beijo",
+            "beira","belga","belas","belos","bemol","benca","bento","berco","berne","berra",
+            "besta","betal","betel","betim","bicar","bicep","bicho","biela","bifes","bigod",
+            "bilha","bilis","bingo","bioma","bique","birra","bisao","bisca","bispo","bloco",
+            "blusa","boate","bobas","bobos","bocal","bocas","bodes","bodas","bofes","boiar",
+            "boias","boina","bolar","bolas","bolha","bolos","bolsa","bomba","bonds","bones",
+            "bonze","borda","bordo","borra","bosco","bossa","botas","botou","boxar","braba",
+            "brabo","braco","brado","brama","brasa","bravo","breca","brejo","breou","breve",
+            "brick","briga","briga","brisa","broca","brota","brumo","bruta","bruto","bruxa",
+            "bruxo","bucal","budas","bufar","bugio","buque","burla","burra","burro","busca",
+            "busto","cabal","cabem","caber","cabos","cabra","cacar","cacau","cacho","cacto",
+            "cadal","cader","caiam","caiar","caiba","caibo","caida","caido","caipa","caira",
+            "cairu","caixa","calai","calao","calar","calca","calda","caldo","calha","calma",
+            "calmo","calor","calou","calva","calvo","camal","camas","campa","campo","canal",
+            "canas","canga","canoa","canor","cansa","canta","canto","capao","capas","capaz",
+            "capim","capos","capot","capra","capuz","caras","cargo","caria","carne","caros",
+            "carpa","carro","carta","casal","casam","casar","casas","casco","casos","casou",
+            "casta","casto","catar","cauda","caule","causa","cavai","cavar","caves","cavou",
+            "cebra","cecal","cedam","ceder","cedeu","cedia","cedir","cedro","cegas","cegar",
+            "cegos","celai","celas","celta","cenas","cenho","censo","cento","cerce","cerca",
+            "cerco","cerde","ceres","ceria","cerne","cerro","certa","certo","cerva","cervo",
+            "cesam","cesao","cesar","cesou","cesta","cesto","cetim","cetro","chaga","chale",
+            "chama","chamo","chapa","chave","checo","chefe","chega","chego","cheia","cheio",
+            "chiar","chins","chips","choca","chora","chupo","chuva","ciber","ciclo","cidra",
+            "cifra","cinco","cinto","cinza","ciosa","cioso","circo","cisne","citar","civil",
+            "clara","claro","clero","clima","clone","clube","coage","coala","cobem","cobre",
+            "cobra","cocar","cocam","cocar","coces","coche","cocos","codam","coder","codir",
+            "coeso","cofre","coice","coifa","coisa","coiso","colar","colam","colar","colas",
+            "colem","colhe","colho","colon","color","colou","comes","comem","comer","comeu",
+            "comum","conas","conde","condu","cones","conto","conta","contr","conve","copas",
+            "copia","copos","coque","coral","corda","cores","corna","corno","coroa","corpo",
+            "corre","corsa","corta","corte","corvo","coser","cospe","costa","cospe","cotas",
+            "coube","couro","cousa","couve","covas","covil","coxas","coxia","cozer","cozeu",
+            "crack","crama","cravo","cream","criar","crias","crime","crina","crise","crivo",
+            "croar","cromo","cruel","cruas","crupe","cruve","cravo","cubam","cubas","cubos",
+            "cucos","cueca","cuida","cujos","culpa","culta","culto","cumba","cunha","cupom",
+            "curam","curar","curou","cursa","curta","curto","curva","curvo","cuspe","custa",
+            "custo","dados","dagao","damas","damos","danca","danai","danar","danos","daqui",
+            "dardo","darem","daria","datar","datas","davam","debil","decai","decor","dedal",
+            "dedao","dedos","deita","deixa","deixo","delas","deles","delta","demao","demos",
+            "denso","dente","depor","depos","depra","derem","deria","derme","derrm","desam",
+            "desce","desci","desde","desem","desta","deste","deter","deteu","dever","devem",
+            "deveu","devir","devia","devol","devou","diabo","dieta","digam","digno","dilui",
+            "dinas","disco","ditar","ditos","diuca","divan","divas","diver","divos","dizem",
+            "dizer","dizse","docas","doces","doida","doido","dolar","dolor","domas","domar",
+            "domes","donos","doria","dormi","dosam","dosar","doses","dotam","dotar","draga",
+            "drama","drena","dubio","ducal","dueto","dumas","dunas","dupla","duplo","duque",
+            "duram","durar","duros","durou","duras","duzia","ebano","eclod","edema","edita",
+            "edito","eguas","eiras","eixos","elege","elfos","elias","elite","eloqu","email",
+            "emana","embar","emend","emiss","emita","emite","emito","enfim","enjoa","enoja",
+            "enorm","enrol","ensai","entra","entre","entro","envio","enxug","epoca","equil",
+            "ereto","ergam","ergue","ermos","erode","erram","errar","errei","erros","errou",
+            "erupc","escal","escol","escov","escud","esfor","espac","espec","esper","espio",
+            "esqui","essas","esses","estai","estar","estas","estes","estim","estiv","estou",
+            "esvai","etapa","etern","etica","etico","etilo","evita","evoca","exage","exala",
+            "exalt","exame","exata","exato","exaus","exced","excel","exces","excut","exibe",
+            "exige","exila","exist","exito","expan","exped","expir","expoe","expor","expos",
+            "expul","extol","extra","fabio","fabri","facao","facam","facas","faces","facho",
+            "facil","fadas","fados","fagot","faina","faixa","falam","falar","falas","falaz",
+            "falei","falha","falho","falir","falou","falsa","falso","falta","falto","famas",
+            "famos","fardo","farsa","farta","farto","fatal","fatia","fatos","fauna","favor",
+            "fazem","fazer","fazia","febre","fecha","fecho","feder","feias","feios","feira",
+            "feita","feito","feliz","femea","femur","fenda","fendo","fenos","feral","feras",
+            "feria","feriu","feroz","ferra","ferro","fetal","feudo","fibra","ficam","ficar",
+            "ficha","fieis","filas","filha","filho","filma","filme","filou","final","finca",
+            "finda","findo","finge","finja","finos","finta","fique","firma","firme","fisco",
+            "fisga","fitas","fixam","fixar","fixas","fixos","flash","floco","flora","fluem",
+            "fluir","fluiu","fluxa","fluxo","focal","focam","focar","focas","focos","fofas",
+            "fofos","fogao","fogem","fogos","folga","folgo","folha","folia","fomes","fonte",
+            "forca","forma","formo","forno","foros","forra","forte","forum","fosco","fossa",
+            "fosse","fotal","fotos","fraca","fraco","frade","fraga","fraco","frase","frete",
+            "frevo","frias","frios","frita","frito","front","frota","fruta","fruir","fucar",
+            "fugas","fugaz","fugir","fugiu","fujas","fujam","fumar","fumos","funda","fundo",
+            "funil","funko","furao","furar","furos","furou","fusao","fusca","galao","galas",
+            "galho","gamer","gamas","gangs","ganha","ganho","garbo","garoa","garra","gases",
+            "gasta","gasto","gatas","gatos","gavea","geada","gelam","gelar","gemer","gemeu",
+            "genes","genio","gente","geral","geram","gerar","gerir","gerou","gesso","gesto",
+            "gigas","ginga","giram","girar","girou","giros","gleba","globo","glosa","gnomo",
+            "goela","gofre","goiab","golas","golfe","golpe","gomas","gongo","gorar","gordo",
+            "gorro","gotas","grade","grafa","grama","grana","grata","grato","graus","grava",
+            "graxa","grazi","grelo","greve","grilo","gripe","grita","grito","grosa","grota",
+            "grude","grupo","gruta","guapa","guapo","guara","gueto","guiar","guias","guiou",
+            "guria","guris","gutar","habei","habit","habil","halal","harpa","haste","haver",
+            "herda","heroi","hiato","hidra","hiena","hindu","hinos","homem","honra","horas",
+            "horda","hotel","humor","hurra","ideal","ideia","idosa","idoso","ilesa","ileso",
+            "ilhas","iludi","imane","imita","imola","impoe","impor","impos","imund","inata",
+            "inato","incal","incid","incit","index","india","indio","induz","inert","infla",
+            "ingre","inici","inspe","inter","intim","invad","inves","irdes","iriam","irmos",
+            "irmas","irrao","iscar","isola","itens","ivory","jacar","jacar","janta","japon",
+            "jarda","jarra","jarro","jaspe","jatos","jaula","jeans","jeeps","jesus","jilom",
+            "jobar","jocas","jogam","jogar","jogos","jogou","joias","jorro","jovem","jubas",
+            "judeu","judos","jugal","juizo","julga","julho","junco","junta","junto","jurar",
+            "juras","juros","jurou","justa","justo","juven","labio","labor","labra","lacam",
+            "lacar","lacos","lacre","lados","ladra","lagoa","lagos","lajes","lamas","lambe",
+            "lambo","lamer","lanar","lanca","lance","lanco","lanho","lapao","lapis","lapso",
+            "larga","largo","larva","laser","lasca","latas","latim","latir","latiu","lavar",
+            "lavou","lazer","lebar","legal","legou","leiam","leigo","leila","leite","leixa",
+            "lemar","lemes","lenda","lenha","lento","leoas","leoes","lepra","leram","leria",
+            "lerma","lesao","lesar","lesma","letal","letim","letra","levam","levar","levei",
+            "levem","lever","leves","levou","liame","licao","licor","lidar","lider","ligar",
+            "ligas","ligou","lilas","limam","limar","limas","limbo","limem","limes","limpa",
+            "limpo","lince","linda","lindo","linea","linha","linho","lipos","liqui","lirio",
+            "lisos","lista","litar","litro","livre","livro","lixam","lixar","lixas","lixos",
+            "lobas","lobos","local","locar","locas","locos","logar","logos","logou","loira",
+            "loiro","lojas","lomba","lombo","lonas","longe","lorde","losna","lotar","louca",
+            "louco","loura","louro","louva","lucas","lucos","lucro","lugar","lulas","lunar",
+            "lusas","lusos","lutar","lutas","lutou","luvas","luxar","luxos","luzem","luzir",
+            "macas","macho","macia","macio","macos","magia","magma","magoa","magos","magra",
+            "magro","maior","malas","malha","malho","mamas","mamao","manca","manco","manga",
+            "manha","manja","manjo","mansa","manso","manta","manto","mapas","marca","marco",
+            "mares","maria","marte","massa","matar","matas","matou","medir","mediu","medos",
+            "meiga","meigo","meios","melar","melas","menor","menos","menta","mente","merda",
+            "merem","meres","meses","mesma","mesmo","metas","meter","meteu","metro","mexam",
+            "mexer","mexeu","miar","micas","micro","migar","migas","migra","mijar","milas",
+            "milho","mimar","mimos","minas","minga","minha","minto","miolo","miope","mirar",
+            "miras","mirra","missa","mista","misto","mitar","mitos","miude","miudo","mixar",
+            "modal","modas","model","modem","modos","moeda","moela","moera","moida","moido",
+            "moita","molda","molde","moldo","moles","molha","molho","momia","monal","monas",
+            "monja","monjo","monte","moral","moram","morar","mordo","morna","morno","morra",
+            "morro","morta","morto","mosca","moser","mostr","motas","motor","motos","moura",
+            "mouro","movam","mover","moveu","mudai","mudam","mudar","mudas","mudei","mudez",
+            "mudos","mudou","mugem","mugir","mugiu","muita","muito","mulas","multa","multo",
+            "mural","murao","muros","musas","musca","musgo","mutil","mutua","mutuo","nabos",
+            "nacar","nacas","nadas","nadam","nadar","nados","nadou","nambi","nanar","nanas",
+            "nanja","nariz","narra","narro","nasal","nasce","nasci","natas","natal","natos",
+            "naval","navem","naves","navio","negro","negra","negue","nervo","nesse","nesta",
+            "neste","nevam","nevar","nevem","neves","nevoa","nexos","ninfa","ninja","ninho",
+            "nisso","nisto","nitar","nitra","nivel","nobre","nocao","nodal","nodos","noite",
+            "noiva","noivo","nojao","nojos","nomes","nonas","nonos","norma","noras","norte",
+            "notas","notam","notar","notou","nouca","novai","novas","novel","novos","nubla",
+            "nucal","nulas","nulos","nunca","nutre","nutro","nuvem","obeso","oboes","obras",
+            "obram","obrar","obrou","obtem","obter","obteu","obvio","ocaso","ocorr","ocupa",
+            "odeia","odiam","odiar","odios","ofend","oicar","oitos","olham","olhar","olhem",
+            "olhos","olhou","ombro","ondas","ontem","opera","opina","opora","optar","optei",
+            "optou","opunh","orado","oram","orar","orcam","orcar","ordem","ordou","orelh",
+            "orgao","orgul","orlas","ornar","ossos","oucos","ousam","ousar","ousou","outra",
+            "outro","ouvem","ouvir","ouviu","ouxam","ouxar","ovais","ovala","ovnis","oxido",
+            "pagas","pagam","pagar","pagou","paiol","paiou","paiol","paira","pairo","palco",
+            "palha","palma","palmo","papal","papas","papei","papel","papos","parda","pardo",
+            "parem","pares","paria","paris","parla","parte","parto","parva","parvo","pasal",
+            "pasar","pasma","pasmo","passa","passo","pasta","pasto","patas","patim","patio",
+            "patos","pausa","pauta","pecar","pecas","pedal","pedir","pediu","pedra","pegas",
+            "pegam","pegar","pegou","peita","peito","pelas","pelei","peles","pelos","penal",
+            "penar","penas","penco","pende","pendo","penha","penso","pente","perca","perco",
+            "perda","perdi","perde","perem","perna","persa","perto","pesar","pesam","pesca",
+            "pesco","pesos","pesou","pesta","piada","piano","picar","picas","picos","pilar",
+            "pilas","pilha","pilos","pimba","pinca","pinga","pingo","pinha","pinho","pinta",
+            "pinto","pioes","piora","pioro","pipas","pique","piram","pirar","pirou","pisam",
+            "pisar","pisca","pisco","pista","pitar","pitos","pivot","placa","plana","plano",
+            "plena","pleno","pluma","pode","podem","poder","podia","podre","poema","poeta",
+            "polca","polir","poliu","polpa","polvo","pomba","pombo","ponde","ponha","ponho",
+            "ponta","ponte","ponto","porao","porca","porco","porem","poria","poros","porra",
+            "porta","porte","porto","posar","posas","posou","posse","posta","poste","posto",
+            "potao","potro","pouca","pouco","poupa","poupo","pousa","pouso","povar","praça",
+            "prado","praga","praia","prata","prazo","prece","preco","prede","predi","prega",
+            "prego","prelo","prema","presa","preso","press","presu","preta","preto","preve",
+            "prima","primo","prior","prism","priva","proal","proas","proba","proem","prole",
+            "prosa","prova","prove","provi","provo","prumo","puder","pudim","pular","pulas",
+            "pulem","pulga","pulha","pulou","pulsa","pulso","punha","punho","puniu","punir",
+            "pupai","puras","puros","puxam","puxar","puxei","puxem","puxou","quadr","quais",
+            "quase","queda","queim","quem","quero","quilo","quota","rabos","racar","racao",
+            "racas","racha","racho","radar","radio","raiar","raios","raiva","rajam","rajar",
+            "ralas","ralar","ralos","ramal","ramas","rampa","ramos","ranca","ranco","rango",
+            "rapaz","raram","raras","raros","rasam","rasar","rasga","rasgo","rasos","raspa",
+            "raspo","rasto","ratam","ratar","ratos","razao","reage","reais","rebai","rebar",
+            "rebol","recai","receb","recei","recol","recor","recua","recuo","redar","redes",
+            "redor","reduz","reelo","refaz","refem","refil","refir","refor","refug","regal",
+            "regar","regem","reger","regia","regra","regue","reina","reino","reita","rejei",
+            "relam","relar","relat","relva","remar","remas","remos","remou","renal","renda",
+            "rendo","renov","rente","repel","repor","repos","reque","resga","resid","resol",
+            "respe","resta","resto","retem","reter","reteu","retir","retom","retro","reude",
+            "rever","revir","rezam","rezar","rezas","rezou","ricam","ricar","ricos","ridas",
+            "ridos","rifle","rigal","rigor","riiam","rijas","rijem","rijos","rilha","rimar",
+            "rimas","rimou","rindo","rinha","rinso","riram","risca","risco","risos","riste",
+            "ritmo","rival","rizam","rizar","robos","rocas","rocha","rodam","rodar","rodas",
+            "rodei","rodou","rogar","rogas","rogou","roiam","rolar","rolas","roles","rolha",
+            "rolou","roman","rombo","rompe","rompi","ronda","rondo","ronha","ronro","rosai",
+            "rosas","rosca","rosco","rosna","rosno","rotar","rotas","rotim","rotor","rotos",
+            "rouba","roubo","rouca","rouco","roupa","roxas","roxos","ruana","rublo","rubor",
+            "rubra","rubro","rudes","rugas","rugem","rugir","rugiu","ruido","ruina","ruiva",
+            "ruivo","rumar","rumos","rumor","rumou","rupee","rural","russo","sabem","saber",
+            "sabes","sabia","sabor","sabre","sacar","sacos","sacou","sacra","sacro","safar",
+            "safra","sagas","sagaz","saiam","saiba","saibo","saida","saido","saira","salas",
+            "saldo","salga","salgo","salmo","salsa","salta","salto","salva","salvo","samba",
+            "sanam","sanar","sanas","sande","sanga","sanha","santa","santo","sapos","saque",
+            "saram","sarar","sarou","sarro","seara","secam","secar","secas","secos","secou",
+            "sedai","sedar","sedas","sedia","sedir","seduz","segue","seios","seiva","seixo",
+            "selai","selam","selar","selas","selim","selos","selou","selva","semen","senai",
+            "sendo","senho","senil","senio","senta","sente","senti","sento","sepai","septo",
+            "sequi","seram","serao","seres","seria","serio","serra","serre","serro","serve",
+            "servi","servo","sesma","sesta","setas","setor","setos","sever","sidra","sigam",
+            "sigla","sigma","signo","silas","sinal","sinas","sinto","sirva","sirvo","sisma",
+            "sismo","sitia","sitio","soado","soais","soamo","soará","soava","sobem","sober",
+            "sobre","sobra","socai","socar","socos","socou","sofas","sofra","sofre","sofri",
+            "sogra","sogro","solar","solda","soldo","solem","soler","soles","solha","solou",
+            "solta","solto","solua","somam","somar","somas","somem","somes","somou","sonam",
+            "sonar","sonas","sonda","sondo","sonha","sonho","sonos","sopra","sopro","soqui",
+            "sorna","sorno","sorri","sorte","sorvo","soter","sotom","soube","soure","sovar",
+            "soves","soveu","suada","suado","suave","subam","subir","subiu","subor","sucao",
+            "sucos","sudar","sufis","sujar","sujas","sujos","sujou","sulca","sulco","supra",
+            "supre","supri","surda","surdo","surge","surgi","surra","surro","surta","surte",
+            "surti","surto","susto","sutil","tabua","tacar","tacas","tacou","taful","talco",
+            "talha","talho","tamao","tamas","tamer","tamor","tampa","tanao","tange","tango",
+            "tanta","tanto","tapai","tapar","tapas","tapes","tapou","taram","tarau","tarda",
+            "tardo","tarem","tarim","tarso","tasar","tasas","tatos","taxam","taxar","taxas",
+            "taxou","tecam","tecar","tecei","tecem","tecer","teceu","tecla","teclo","tecto",
+            "telas","temam","temas","temem","temer","temeu","temor","tempo","tenda","tende",
+            "tendo","tenha","tenho","tenor","tensa","tenso","tenta","tento","terão","terça",
+            "terco","teria","terma","terno","terra","tesas","tesos","testa","teste","testo",
+            "tetra","tetos","tevam","tever","texas","texto","tiara","tigre","tijoq","tilam",
+            "tilde","timar","timbo","times","timol","tinas","tinge","tinha","tinto","tipas",
+            "tipos","tique","tiram","tirar","tiras","tirei","tirem","tirou","tisna","titan",
+            "toada","toais","toamo","tocai","tocam","tocar","tocas","tocha","todos","tolda",
+            "toldo","tolos","tomam","tomar","tomas","tombo","tomos","tomou","tonal","tonas",
+            "toner","tones","tonto","topam","topar","topas","topaz","topou","toque","toral",
+            "toras","torce","torci","torna","torno","torre","torso","torta","torto","tosam",
+            "tosar","tosca","tosco","tosse","tossi","total","touca","touro","toxar","traca",
+            "traco","traço","trama","tramo","trana","trara","trará","trata","trato","trava",
+            "travo","traze","treco","trela","trema","tremi","tremo","trens","trepa","trepo",
+            "tresa","treva","tribu","triga","trigo","trilh","trinh","tripa","troca","troco",
+            "trofe","trono","tropa","trote","trova","troxo","trufa","trunk","truta","tubas",
+            "tubos","tucas","tudos","tulha","tumor","tunas","turba","turbo","turma","turno",
+            "turva","turvo","tutor","uberc","ugand","ultra","umbra","unaes","unica","unico",
+            "unida","unido","unham","unhei","uniam","uniao","unias","uniou","unira","usada",
+            "usado","usais","usamo","usara","usava","usual","uteis","utter","uvais","uvaie",
+            "vadia","vadio","vagas","vagem","vagos","vaiam","vaiar","vaias","valem","valer",
+            "vales","valeu","valia","valor","valsa","vapor","varam","varar","varas","varia",
+            "vario","variz","varou","varre","varri","vasar","vasos","vasto","vazam","vazar",
+            "vazia","vazio","vazou","veado","vedai","vedam","vedar","vedas","vedou","veias",
+            "veios","velam","velar","velas","velha","velho","velou","veloz","vemos","vence",
+            "venci","venda","vende","vendi","vendo","vento","venus","veram","verao","verba",
+            "verbo","verde","verga","verme","verso","verve","vespa","veste","vesti","vetar",
+            "vexam","vexar","viada","viaio","viana","vicar","vidam","vidas","vidra","vidro",
+            "vieis","viela","viemo","vigas","vigor","vilas","vilma","vimos","vinda","vinde",
+            "vindo","vinga","vingo","vinha","vinho","vinte","viola","viram","virar","viras",
+            "virei","virem","virou","visar","visas","visou","vista","visto","vital","vitar",
+            "viuva","viuvo","vivai","vivam","viver","vives","viveu","vivia","vivos","vizir",
+            "voais","voamo","vocai","vocar","voces","vogal","vogar","volta","volto","vomit",
+            "vossa","vosso","votai","votam","votar","votas","votou","votos","vozes","vulgo",
+            "vulto","xales","xeque","xerez","zurra","zurro"
+        ];
+
+        // Answer words - common, well-known 5-letter Portuguese words (no accents)
+        const ANSWER_WORDS = [
+            "gatos","bolas","campo","plano","mundo","ponto","grupo","livro","noite","parte",
+            "corpo","monte","morte","forte","forma","vento","terra","pedra","folha","porta",
+            "carta","festa","placa","corda","bolsa","perna","braço","barco","pesca","praia",
+            "samba","selva","nuvem","pluma","grade","fonte","manga","palha","rosto","musgo",
+            "tropa","brasa","gruta","pista","torre","plena","fosco","turma","surdo","frota",
+            "grama","trigo","suave","breve","nobre","grave","firme","pleno","certo","preto",
+            "bruto","falso","louco","verde","claro","justo","vasto","risco","ruivo","denso",
+            "curto","largo","lindo","magro","calmo","farto","morno","gordo","negro","sutil",
+            "agora","antes","ainda","desde","muito","pouco","nunca","sobre","falar","estar",
+            "poder","saber","dever","fazer","viver","comer","beber","pedir","fugir","subir",
+            "abrir","solta","mudar","lutar","rezar","curar","votar","nadar","rolar","secar",
+            "armar","pular","tocar","cavar","sopra","limpa","marca","guiar","virar","colar",
+            "rocha","chuva","lenha","milho","gesso","fibra","cedro","lacre","seixo","areia",
+            "sabia","falha","safra","colhe","plano","cesto","redes","prado","barca","salva",
+            "cofre","vulto","honra","cruel","moeda","leite","ritmo","drama","cisne","rapaz",
+            "tigre","corvo","pomba","bruxa","forca","grito","sonho","poema","prova","carta",
+            "moral","rival","genio","heroi","elite","forum","termo","etapa","lapso","exato",
+            "pingo","faixa","palco","globo","ramos","balde","trapo","fluir","trevo","harpa",
+            "malha","lixar","polir","medir","puxar","lavar","morar","jogar","choça","dorso",
+            "pavor","pudim","molho","xerez","rublo","juizo","logro","nervo","torso","posse",
+            "calor","valor","rumor","temor","vigor","sabor","labor","tumor","furor","pudor",
+            "aroma","brisa","flora","fauna","safra","cobra","galho","musca","tinta","farsa",
+            "burro","casco","pulga","mosca","vespa","coroa","trono","lanca","floco","grilo",
+            "manto","cinto","botas","luvas","touca","cacto","valsa","fenda","cunha","bolha",
+            "rampa","lombo","polpa","cravo","rosca","torta","molde","fibra","nervo","grade",
+            "cabos","sinos","renas","dunas","lojas","vasos","farol","astro","renas","leoas",
+            "sulco","poste","cabra","lobos","sinos","tubos","ninho","roupa","telha","tombo",
+            "puxao","salto","rugas","cospe","turno","podar","solar","coral","naval","rural",
+            "total","vital","final","banal","fatal","metal","penal","vocal","local","moral"
+        ];
+
+        // ====== STATE ======
+        const MAX_ATTEMPTS = 6;
+        const WORD_LENGTH = 5;
+        let targetWord = '';
+        let currentRow = 0;
+        let currentCol = 0;
+        let currentGuess = '';
+        let guesses = [];
+        let gameOver = false;
+        let gameWon = false;
+        let isDaily = true;
+        let keyStates = {};
+
+        // ====== UI REFS ======
+        const gridEl = document.getElementById('grid');
+        const keyboardEl = document.getElementById('keyboard');
+        const messageEl = document.getElementById('message');
+        const resultOverlay = document.getElementById('result-overlay');
+
+        // ====== DATE ======
+        function getTodayString() {
+            const d = new Date();
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        function getDayIndex() {
+            const now = new Date();
+            const start = new Date(2024, 0, 1);
+            const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+            return diff;
+        }
+
+        function getDailyWord() {
+            const idx = getDayIndex() % ANSWER_WORDS.length;
+            return ANSWER_WORDS[idx].toUpperCase();
+        }
+
+        // ====== INIT ======
+        function initGame() {
+            document.getElementById('game-date').textContent = getTodayString();
+            targetWord = getDailyWord();
+            isDaily = true;
+            currentRow = 0;
+            currentCol = 0;
+            currentGuess = '';
+            guesses = [];
+            gameOver = false;
+            gameWon = false;
+            keyStates = {};
+            buildGrid();
+            buildKeyboard();
+            hideMessage();
+        }
+
+        function newRandomGame() {
+            const idx = Math.floor(Math.random() * ANSWER_WORDS.length);
+            targetWord = ANSWER_WORDS[idx].toUpperCase();
+            isDaily = false;
+            currentRow = 0;
+            currentCol = 0;
+            currentGuess = '';
+            guesses = [];
+            gameOver = false;
+            gameWon = false;
+            keyStates = {};
+            document.getElementById('game-date').textContent = 'Modo livre';
+            buildGrid();
+            buildKeyboard();
+            hideMessage();
+        }
+
+        // ====== GRID ======
+        function buildGrid() {
+            gridEl.innerHTML = '';
+            for (let r = 0; r < MAX_ATTEMPTS; r++) {
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.id = `row-${r}`;
+                for (let c = 0; c < WORD_LENGTH; c++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.id = `tile-${r}-${c}`;
+                    row.appendChild(tile);
+                }
+                gridEl.appendChild(row);
+            }
+        }
+
+        // ====== KEYBOARD ======
+        function buildKeyboard() {
+            keyboardEl.innerHTML = '';
+            const rows = [
+                ['Q','W','E','R','T','Y','U','I','O','P'],
+                ['A','S','D','F','G','H','J','K','L'],
+                ['ENTER','Z','X','C','V','B','N','M','⌫']
+            ];
+            for (const row of rows) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'keyboard-row';
+                for (const key of row) {
+                    const btn = document.createElement('button');
+                    btn.className = 'key-btn';
+                    if (key === 'ENTER' || key === '⌫') btn.classList.add('wide');
+                    btn.textContent = key;
+                    btn.dataset.key = key;
+                    btn.onclick = () => handleKey(key);
+                    if (keyStates[key]) {
+                        btn.classList.add(keyStates[key]);
+                    }
+                    rowDiv.appendChild(btn);
+                }
+                keyboardEl.appendChild(rowDiv);
+            }
+        }
+
+        // ====== INPUT ======
+        function handleKey(key) {
+            if (gameOver) return;
+
+            if (key === '⌫' || key === 'BACKSPACE') {
+                deleteLetter();
+            } else if (key === 'ENTER') {
+                submitGuess();
+            } else if (/^[A-Z]$/.test(key)) {
+                addLetter(key);
+            }
+        }
+
+        function addLetter(letter) {
+            if (currentCol >= WORD_LENGTH) return;
+            currentGuess += letter;
+            const tile = document.getElementById(`tile-${currentRow}-${currentCol}`);
+            tile.textContent = letter;
+            tile.classList.add('filled');
+            currentCol++;
+        }
+
+        function deleteLetter() {
+            if (currentCol <= 0) return;
+            currentCol--;
+            currentGuess = currentGuess.slice(0, -1);
+            const tile = document.getElementById(`tile-${currentRow}-${currentCol}`);
+            tile.textContent = '';
+            tile.classList.remove('filled');
+        }
+
+        function isValidWord(word) {
+            const lower = word.toLowerCase();
+            return VALID_WORDS.includes(lower) || ANSWER_WORDS.includes(lower);
+        }
+
+        function submitGuess() {
+            if (currentCol < WORD_LENGTH) {
+                showMessage('Palavra incompleta!', 'error');
+                shakeRow(currentRow);
+                return;
+            }
+
+            if (!isValidWord(currentGuess)) {
+                showMessage('Palavra nao encontrada!', 'error');
+                shakeRow(currentRow);
+                return;
+            }
+
+            const result = evaluateGuess(currentGuess, targetWord);
+            guesses.push({ word: currentGuess, result });
+
+            revealRow(currentRow, result);
+
+            if (currentGuess === targetWord) {
+                gameOver = true;
+                gameWon = true;
+                const msgs = ['Genial!', 'Magnifico!', 'Impressionante!', 'Muito bem!', 'Boa!', 'Por pouco!'];
+                setTimeout(() => {
+                    showMessage(msgs[currentRow] || 'Parabens!', 'win');
+                    setTimeout(() => showResult(), 1200);
+                }, WORD_LENGTH * 300 + 200);
+            } else if (currentRow >= MAX_ATTEMPTS - 1) {
+                gameOver = true;
+                gameWon = false;
+                setTimeout(() => {
+                    showMessage(`A palavra era: ${targetWord}`, 'error');
+                    setTimeout(() => showResult(), 1200);
+                }, WORD_LENGTH * 300 + 200);
+            }
+
+            currentRow++;
+            currentCol = 0;
+            currentGuess = '';
+        }
+
+        function evaluateGuess(guess, target) {
+            const result = Array(WORD_LENGTH).fill('absent');
+            const targetArr = target.split('');
+            const guessArr = guess.split('');
+            const used = Array(WORD_LENGTH).fill(false);
+
+            // First pass: correct positions
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                if (guessArr[i] === targetArr[i]) {
+                    result[i] = 'correct';
+                    used[i] = true;
+                }
+            }
+
+            // Second pass: present but wrong position
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                if (result[i] === 'correct') continue;
+                for (let j = 0; j < WORD_LENGTH; j++) {
+                    if (!used[j] && guessArr[i] === targetArr[j]) {
+                        result[i] = 'present';
+                        used[j] = true;
+                        break;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        function revealRow(row, result) {
+            const guess = guesses[guesses.length - 1].word;
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                const tile = document.getElementById(`tile-${row}-${i}`);
+                setTimeout(() => {
+                    tile.classList.add('reveal', result[i]);
+                }, i * 300);
+            }
+
+            // Update keyboard after all reveals
+            setTimeout(() => {
+                for (let i = 0; i < WORD_LENGTH; i++) {
+                    const letter = guess[i];
+                    const state = result[i];
+                    const priority = { 'correct': 3, 'present': 2, 'absent': 1 };
+                    const current = keyStates[letter];
+                    if (!current || priority[state] > priority[current]) {
+                        keyStates[letter] = state;
+                    }
+                }
+                buildKeyboard();
+            }, WORD_LENGTH * 300);
+        }
+
+        function shakeRow(row) {
+            const rowEl = document.getElementById(`row-${row}`);
+            rowEl.classList.add('shake');
+            setTimeout(() => rowEl.classList.remove('shake'), 500);
+        }
+
+        // ====== MESSAGES ======
+        function showMessage(text, type) {
+            messageEl.textContent = text;
+            messageEl.className = `message-text visible ${type || ''}`;
+            if (type === 'error') {
+                setTimeout(hideMessage, 2000);
+            }
+        }
+
+        function hideMessage() {
+            messageEl.className = 'message-text';
+        }
+
+        // ====== RESULT ======
+        function showResult() {
+            resultOverlay.classList.add('active');
+            document.getElementById('result-icon').textContent = gameWon ? '🎉' : '😢';
+            const title = document.getElementById('result-title');
+            title.textContent = gameWon ? 'Parabens!' : 'Que pena!';
+            title.className = gameWon ? 'win-text' : 'lose-text';
+            document.getElementById('result-message').textContent = gameWon
+                ? `Voce acertou em ${guesses.length}/${MAX_ATTEMPTS} tentativas!`
+                : `A palavra era: ${targetWord}`;
+
+            document.getElementById('share-preview').textContent = generateShareText();
+
+            // Hide share button for random games
+            document.getElementById('share-btn').style.display = isDaily ? 'block' : 'none';
+        }
+
+        function closeResult() {
+            resultOverlay.classList.remove('active');
+        }
+
+        function generateShareText() {
+            const dateStr = isDaily ? getTodayString() : 'Livre';
+            const attempts = gameWon ? `${guesses.length}/${MAX_ATTEMPTS}` : `X/${MAX_ATTEMPTS}`;
+            let text = `🔤 Palavritas ${dateStr}\n\n${attempts} tentativas\n\n`;
+
+            for (const g of guesses) {
+                let line = '';
+                for (const r of g.result) {
+                    if (r === 'correct') line += '🟩';
+                    else if (r === 'present') line += '🟨';
+                    else line += '⬛';
+                }
+                text += line + '\n';
+            }
+
+            return text.trim();
+        }
+
+        function shareResult() {
+            const text = generateShareText();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const toast = document.getElementById('copied-toast');
+                    toast.classList.add('visible');
+                    setTimeout(() => toast.classList.remove('visible'), 2000);
+                });
+            }
+        }
+
+        // ====== KEYBOARD INPUT ======
+        document.addEventListener('keydown', (e) => {
+            if (gameOver) return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+            const key = e.key.toUpperCase();
+            if (key === 'ENTER') {
+                handleKey('ENTER');
+            } else if (key === 'BACKSPACE') {
+                handleKey('⌫');
+            } else if (/^[A-Z]$/.test(key)) {
+                handleKey(key);
+            }
+        });
+
+        // ====== START ======
+        initGame();
+    </script>
+</body>
+</html>

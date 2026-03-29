@@ -101,6 +101,10 @@
             background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c, #2ecc71);
         }
 
+        .game-card.palavritas::before {
+            background: linear-gradient(90deg, #2ecc71, #f1c40f, #7f8c8d, #2ecc71);
+        }
+
         .game-card:hover {
             transform: translateY(-8px) scale(1.02);
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
@@ -138,6 +142,10 @@
             color: #2ecc71;
         }
 
+        .game-card.palavritas h2 {
+            color: #2ecc71;
+        }
+
         .game-card p {
             color: #666;
             font-size: 1rem;
@@ -167,6 +175,10 @@
         }
 
         .game-card.forca .badge {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .game-card.palavritas .badge {
             background: linear-gradient(135deg, #2ecc71, #27ae60);
         }
 
@@ -243,6 +255,13 @@
                 <span class="game-icon">🪢</span>
                 <h2>Jogo da Forca</h2>
                 <p>Descubra a palavra secreta antes que o boneco seja enforcado!</p>
+                <span class="badge">1 Jogador</span>
+            </a>
+
+            <a href="palavritas.html" class="game-card palavritas">
+                <span class="game-icon">🔤</span>
+                <h2>Palavritas</h2>
+                <p>Adivinhe a palavra de 5 letras em 6 tentativas! Um novo desafio por dia.</p>
                 <span class="badge">1 Jogador</span>
             </a>
         </div>
