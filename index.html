@@ -105,6 +105,10 @@
             background: linear-gradient(90deg, #2ecc71, #f1c40f, #7f8c8d, #2ecc71);
         }
 
+        .game-card.freecell::before {
+            background: linear-gradient(90deg, #1a5c2e, #2ecc71, #e74c3c, #1a5c2e);
+        }
+
         .game-card:hover {
             transform: translateY(-8px) scale(1.02);
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
@@ -146,6 +150,10 @@
             color: #2ecc71;
         }
 
+        .game-card.freecell h2 {
+            color: #1a5c2e;
+        }
+
         .game-card p {
             color: #666;
             font-size: 1rem;
@@ -180,6 +188,10 @@
 
         .game-card.palavritas .badge {
             background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .game-card.freecell .badge {
+            background: linear-gradient(135deg, #1a5c2e, #27ae60);
         }
 
         /* Floating circles background */
@@ -262,6 +274,13 @@
                 <span class="game-icon">🔤</span>
                 <h2>Palavritas</h2>
                 <p>Adivinhe a palavra de 5 letras em 6 tentativas! Um novo desafio por dia.</p>
+                <span class="badge">1 Jogador</span>
+            </a>
+
+            <a href="freecell.html" class="game-card freecell">
+                <span class="game-icon">🃏</span>
+                <h2>FreeCell</h2>
+                <p>Organize todas as cartas por naipe nas fundacoes usando as celulas livres!</p>
                 <span class="badge">1 Jogador</span>
             </a>
         </div>
