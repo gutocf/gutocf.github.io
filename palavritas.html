@@ -188,10 +188,11 @@
             display: flex;
             gap: 5px;
             justify-content: center;
+            width: 100%;
         }
 
         .key-btn {
-            min-width: 34px;
+            flex: 1;
             height: 50px;
             border: none;
             border-radius: 8px;
@@ -219,7 +220,7 @@
         }
 
         .key-btn.wide {
-            min-width: 58px;
+            flex: 1.5;
             font-size: 0.8rem;
         }
 
@@ -376,8 +377,7 @@
 
         @media (max-width: 400px) {
             .tile { width: 50px; height: 50px; font-size: 1.5rem; }
-            .key-btn { min-width: 28px; height: 44px; font-size: 0.85rem; padding: 0 5px; }
-            .key-btn.wide { min-width: 46px; }
+            .key-btn { height: 44px; font-size: 0.85rem; padding: 0 5px; }
             .game-header h1 { font-size: 1.8rem; }
         }
     </style>
