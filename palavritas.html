@@ -179,14 +179,19 @@
             flex-direction: column;
             align-items: center;
             gap: 6px;
-            width: 100%;
-            max-width: 500px;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0 8px;
+            box-sizing: border-box;
             margin-bottom: 12px;
         }
 
         .keyboard-row {
             display: flex;
             gap: 5px;
+            width: 100%;
             justify-content: center;
             width: 100%;
         }
@@ -203,7 +208,7 @@
             cursor: pointer;
             transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
             box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-            padding: 0 8px;
+            padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -377,7 +382,8 @@
 
         @media (max-width: 400px) {
             .tile { width: 50px; height: 50px; font-size: 1.5rem; }
-            .key-btn { height: 44px; font-size: 0.85rem; padding: 0 5px; }
+            .key-btn { height: 44px; font-size: 0.85rem; }
+            .key-btn.wide { flex: 1.5; }
             .game-header h1 { font-size: 1.8rem; }
         }
     </style>
@@ -1411,7 +1417,7 @@
 
         // Answer words - common, well-known 5-letter Portuguese words (no accents)
         const ANSWER_WORDS = [
-            "gatos","bolas","campo","plano","mundo","ponto","grupo","livro","noite","parte",
+            "campo","plano","mundo","ponto","grupo","livro","noite","parte",
             "corpo","monte","morte","forte","forma","vento","terra","pedra","folha","porta",
             "carta","festa","placa","corda","bolsa","perna","braço","barco","pesca","praia",
             "samba","selva","nuvem","pluma","grade","fonte","manga","palha","rosto","musgo",
@@ -1424,21 +1430,21 @@
             "abrir","solta","mudar","lutar","rezar","curar","votar","nadar","rolar","secar",
             "armar","pular","tocar","cavar","sopra","limpa","marca","guiar","virar","colar",
             "rocha","chuva","lenha","milho","gesso","fibra","cedro","lacre","seixo","areia",
-            "sabia","falha","safra","colhe","plano","cesto","redes","prado","barca","salva",
+            "sabia","falha","safra","colhe","plano","cesto","prado","barca","salva",
             "cofre","vulto","honra","cruel","moeda","leite","ritmo","drama","cisne","rapaz",
             "tigre","corvo","pomba","bruxa","forca","grito","sonho","poema","prova","carta",
             "moral","rival","genio","heroi","elite","forum","termo","etapa","lapso","exato",
-            "pingo","faixa","palco","globo","ramos","balde","trapo","fluir","trevo","harpa",
+            "pingo","faixa","palco","globo","balde","trapo","fluir","trevo","harpa",
             "malha","lixar","polir","medir","puxar","lavar","morar","jogar","choça","dorso",
             "pavor","pudim","molho","xerez","rublo","juizo","logro","nervo","torso","posse",
             "calor","valor","rumor","temor","vigor","sabor","labor","tumor","furor","pudor",
             "aroma","brisa","flora","fauna","safra","cobra","galho","musca","tinta","farsa",
             "burro","casco","pulga","mosca","vespa","coroa","trono","lanca","floco","grilo",
-            "manto","cinto","botas","luvas","touca","cacto","valsa","fenda","cunha","bolha",
+            "manto","cinto","touca","cacto","valsa","fenda","cunha","bolha",
             "rampa","lombo","polpa","cravo","rosca","torta","molde","fibra","nervo","grade",
-            "cabos","sinos","renas","dunas","lojas","vasos","farol","astro","renas","leoas",
-            "sulco","poste","cabra","lobos","sinos","tubos","ninho","roupa","telha","tombo",
-            "puxao","salto","rugas","cospe","turno","podar","solar","coral","naval","rural",
+            "farol","astro",
+            "sulco","poste","cabra","ninho","roupa","telha","tombo",
+            "puxao","salto","cospe","turno","podar","solar","coral","naval","rural",
             "total","vital","final","banal","fatal","metal","penal","vocal","local","moral"
         ];
 
