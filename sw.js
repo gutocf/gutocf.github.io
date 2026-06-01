@@ -1,7 +1,8 @@
-const CACHE_NAME = 'jogos-do-vitor-v1';
+const CACHE_NAME = 'jogos-do-vitor-v2';
 const ASSETS = [
   '/',
   '/index.html',
+  '/pintor.html',
   '/twister.html',
   '/ludo.html',
   '/velha.html',

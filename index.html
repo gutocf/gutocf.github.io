@@ -89,6 +89,10 @@
             border-radius: 24px 24px 0 0;
         }
 
+        .game-card.pintor::before {
+            background: linear-gradient(90deg, #11998e, #38ef7d, #f1c40f, #e74c3c);
+        }
+
         .game-card.twister::before {
             background: linear-gradient(90deg, #e44d26, #1e90ff, #f7df1e, #2ed573);
         }
@@ -134,6 +138,10 @@
             margin-bottom: 10px;
         }
 
+        .game-card.pintor h2 {
+            color: #11998e;
+        }
+
         .game-card.twister h2 {
             color: #764ba2;
         }
@@ -172,6 +180,10 @@
             font-size: 0.85rem;
             font-weight: 800;
             color: #fff;
+        }
+
+        .game-card.pintor .badge {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
         }
 
         .game-card.twister .badge {
@@ -246,6 +258,13 @@
         <p class="subtitle">Escolha um jogo para se divertir!</p>
 
         <div class="games-grid">
+            <a href="pintor.html" class="game-card pintor">
+                <span class="game-icon">🎨⚽</span>
+                <h2>Pintor de Craques</h2>
+                <p>Monte o seu jogador de futebol e pinte tudo do seu jeito com as bolinhas de cor!</p>
+                <span class="badge">1 Jogador</span>
+            </a>
+
             <a href="twister.html" class="game-card twister">
                 <span class="game-icon">🌀</span>
                 <h2>Twister</h2>

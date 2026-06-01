@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pintor de Craques</title>
+    <meta name="theme-color" content="#11998e">
+    <meta name="description" content="Monte e pinte o seu jogador de futebol!">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: #fff;
+        }
+
+        /* === FLOATING BG === */
+        .bg-circle {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-circle:nth-child(1) { width: 200px; height: 200px; top: -50px; left: -50px; animation: float 8s ease-in-out infinite; }
+        .bg-circle:nth-child(2) { width: 150px; height: 150px; bottom: -30px; right: -30px; animation: float 10s ease-in-out infinite reverse; }
+        .bg-circle:nth-child(3) { width: 100px; height: 100px; top: 40%; left: 80%; animation: float 7s ease-in-out infinite; }
+        .bg-circle:nth-child(4) { width: 180px; height: 180px; top: 60%; left: -40px; animation: float 9s ease-in-out infinite reverse; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .screen {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 16px 40px;
+            animation: fadeIn 0.5s ease;
+        }
+        .screen.active { display: flex; }
+
+        .top-bar {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .home-link {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 800;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 14px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+        }
+
+        h1.title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2.6rem;
+            text-align: center;
+            margin: 30px 0 6px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.25);
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1.15rem;
+            font-weight: 600;
+            opacity: 0.95;
+            margin-bottom: 26px;
+        }
+
+        .mascot {
+            font-size: 6rem;
+            margin: 10px 0 4px;
+            animation: bob 2.2s ease-in-out infinite;
+        }
+        @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+        .btn {
+            font-family: 'Fredoka One', cursive;
+            border: none;
+            border-radius: 18px;
+            padding: 16px 34px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #11998e;
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 16px 32px rgba(0,0,0,0.3); }
+        .btn:active { transform: translateY(0) scale(0.97); }
+        .btn.secondary {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 1.05rem;
+            padding: 12px 22px;
+        }
+
+        /* === STEP HEADER === */
+        .step-head {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.9rem;
+            text-align: center;
+            margin: 4px 0 4px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .step-sub { text-align:center; font-weight:600; opacity:.92; margin-bottom:18px; }
+
+        .steps-dots { display:flex; gap:10px; margin-bottom:14px; }
+        .steps-dots .dot {
+            width: 14px; height: 14px; border-radius:50%;
+            background: rgba(255,255,255,0.35);
+            transition: background .2s, transform .2s;
+        }
+        .steps-dots .dot.done { background:#fff; }
+        .steps-dots .dot.current { background:#fff; transform: scale(1.4); }
+
+        /* === OPTION GRID === */
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            width: 100%;
+            max-width: 460px;
+            margin-bottom: 22px;
+        }
+        @media (min-width: 520px) { .options { grid-template-columns: repeat(4, 1fr); max-width: 720px; } }
+
+        .opt {
+            background: rgba(255,255,255,0.95);
+            color: #1c6b4a;
+            border: 4px solid transparent;
+            border-radius: 20px;
+            padding: 18px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+        }
+        .opt:hover { transform: translateY(-5px); }
+        .opt.selected { border-color: #f1c40f; box-shadow: 0 0 0 4px rgba(241,196,15,.4), 0 8px 18px rgba(0,0,0,.2); }
+        .opt .opt-art { display:block; height: 92px; margin-bottom: 8px; }
+        .opt .opt-art svg { height: 100%; width: 100%; }
+        .opt .opt-emoji { font-size: 3.4rem; line-height:92px; display:block; }
+        .opt .opt-name { font-family: 'Fredoka One', cursive; font-size: 1.05rem; }
+
+        .nav-row { display:flex; gap:14px; align-items:center; }
+
+        /* === COLORING SCREEN === */
+        #screen-paint { padding-bottom: 20px; }
+        .paint-wrap {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .canvas-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 10px;
+            box-shadow: 0 14px 36px rgba(0,0,0,0.25);
+            width: 100%;
+            max-width: 420px;
+        }
+        #arte { width: 100%; height: auto; display:block; touch-action: manipulation; }
+        #arte .regiao { cursor: pointer; transition: fill .08s; }
+
+        .palette {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 16px 0 6px;
+            max-width: 460px;
+        }
+        .swatch {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.8);
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+            transition: transform .12s ease, border-color .12s;
+            position: relative;
+        }
+        .swatch:hover { transform: scale(1.12); }
+        .swatch.sel { border-color: #f1c40f; transform: scale(1.22); box-shadow: 0 0 0 4px rgba(241,196,15,.45); }
+        .swatch.eraser { background:#fff; display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
+
+        .tool-row { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:12px; }
+
+        .hint { text-align:center; font-weight:700; opacity:.95; margin: 4px 0 2px; }
+
+        @media (max-width: 600px) {
+            h1.title { font-size: 2rem; }
+            .step-head { font-size: 1.55rem; }
+            .swatch { width: 40px; height:40px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+
+    <!-- TITLE -->
+    <section id="screen-title" class="screen active">
+        <div class="top-bar"><a href="index.html" class="home-link">🏠 Início</a><span></span></div>
+        <span class="mascot">🎨⚽</span>
+        <h1 class="title">Pintor de Craques</h1>
+        <p class="subtitle">Monte o seu jogador e pinte do seu jeito!</p>
+        <button class="btn" id="btn-start">Começar a pintar ▸</button>
+    </section>
+
+    <!-- WIZARD -->
+    <section id="screen-wizard" class="screen">
+        <div class="top-bar">
+            <a href="index.html" class="home-link">🏠 Início</a>
+            <div class="steps-dots" id="dots"></div>
+            <span style="width:64px"></span>
+        </div>
+        <h2 class="step-head" id="step-title"></h2>
+        <p class="step-sub" id="step-sub"></p>
+        <div class="options" id="options"></div>
+        <div class="nav-row">
+            <button class="btn secondary" id="btn-back">◂ Voltar</button>
+            <button class="btn" id="btn-next" disabled style="opacity:.5">Próximo ▸</button>
+        </div>
+    </section>
+
+    <!-- PAINT -->
+    <section id="screen-paint" class="screen">
+        <div class="paint-wrap">
+            <div class="top-bar">
+                <a href="index.html" class="home-link">🏠 Início</a>
+                <button class="btn secondary" id="btn-remake">↺ Montar outro</button>
+            </div>
+            <p class="hint">Toque numa bolinha de cor e depois pinte o desenho! 🖌️</p>
+            <div class="canvas-card">
+                <div id="arte-holder"></div>
+            </div>
+            <div class="palette" id="palette"></div>
+            <div class="tool-row">
+                <button class="btn secondary" id="btn-clear">🧹 Limpar tudo</button>
+                <button class="btn secondary" id="btn-save">💾 Salvar imagem</button>
+            </div>
+        </div>
+    </section>
+
+<script>
+/* ====================== DADOS DAS ESCOLHAS ====================== */
+const PLAYERS = [
+    { id:'curtos',   name:'Cabelo curto', hair:'curtos' },
+    { id:'cacheado', name:'Cacheado',     hair:'cacheado' },
+    { id:'moicano',  name:'Moicano',      hair:'moicano' },
+    { id:'longo',    name:'Cabelo longo', hair:'longo' },
+];
+const OBJECTS = [
+    { id:'trofeu',   name:'Troféu',  emoji:'🏆' },
+    { id:'bola',     name:'Bola',    emoji:'⚽' },
+    { id:'medalha',  name:'Medalha', emoji:'🥇' },
+    { id:'luva',     name:'Luvas',   emoji:'🧤' },
+];
+const POSES = [
+    { id:'parado',      name:'Em pé',        emoji:'🧍' },
+    { id:'chutando',    name:'Chutando',     emoji:'🦵' },
+    { id:'comemorando', name:'Comemorando',  emoji:'🙌' },
+    { id:'goleiro',     name:'Goleiro',      emoji:'🥅' },
+];
+const SHIRTS = [
+    { id:'lisa',     name:'Lisa',             emoji:'👕' },
+    { id:'vertical', name:'Listras em pé',    emoji:'🎽' },
+    { id:'horizontal',name:'Listras deitadas',emoji:'🎽' },
+    { id:'faixa',    name:'Faixa',            emoji:'🏳️' },
+];
+
+const POSE_ANGLES = {
+    parado:      { armL:-8,   armR:8,   legL:5,   legR:-5  },
+    chutando:    { armL:-30,  armR:25,  legL:8,   legR:-58 },
+    comemorando: { armL:-150, armR:150, legL:5,   legR:-5  },
+    goleiro:     { armL:-78,  armR:78,  legL:22,  legR:-22 },
+};
+
+/* ====================== CONSTRUÇÃO DO SVG ====================== */
+function reg(cor, d){ return `<path class="regiao" data-cor="${cor}" d="${d}"/>`; }
+
+function hairPath(id){
+    switch(id){
+        case 'cacheado':
+            return 'M150,92 Q143,52 168,50 Q166,34 190,40 Q200,26 212,40 Q236,34 234,52 Q259,52 252,92 Q241,68 226,66 Q216,54 200,60 Q184,54 174,66 Q159,68 150,92 Z';
+        case 'moicano':
+            return 'M185,46 Q200,18 216,46 L216,72 Q200,66 185,72 Z';
+        case 'longo':
+            return 'M148,98 Q146,46 200,40 Q254,46 252,98 L252,156 Q241,156 238,122 Q231,70 200,66 Q169,70 162,122 Q159,156 148,156 Z';
+        default: /* curtos */
+            return 'M152,84 Q150,46 200,42 Q250,46 248,84 Q229,60 200,58 Q171,60 152,84 Z';
+    }
+}
+
+function armGroup(side, px, py, angle, glove){
+    const hand = glove
+        ? reg('luva', `M${px-19},${py+108} Q${px-21},${py+138} ${px},${py+140} Q${px+21},${py+138} ${px+19},${py+108} Z`)
+          + reg('luva', `M${px-19},${py+108} L${px+19},${py+108} L${px+19},${py+118} L${px-19},${py+118} Z`)
+        : `<circle class="regiao" data-cor="pele" cx="${px}" cy="${py+126}" r="16"/>`;
+    return `<g transform="rotate(${angle} ${px} ${py})">`
+        + reg('pele', `M${px-13},${py} L${px+13},${py} Q${px+15},${py} ${px+15},${py+13} L${px+15},${py+112} Q${px+15},${py+125} ${px},${py+125} Q${px-15},${py+125} ${px-15},${py+112} L${px-15},${py+13} Q${px-15},${py} ${px-13},${py} Z`)
+        + hand
+        + '</g>';
+}
+
+function legGroup(side, px, py, angle){
+    const by = py+150; // bottom of leg
+    return `<g transform="rotate(${angle} ${px} ${py})">`
+        + reg('pele', `M${px-15},${py} L${px+15},${py} Q${px+15},${py} ${px+15},${py+14} L${px+15},${by} L${px-15},${by} L${px-15},${py+14} Q${px-15},${py} ${px-15},${py} Z`)
+        + reg('meia', `M${px-16},${by} L${px+16},${by} L${px+16},${by+34} L${px-16},${by+34} Z`)
+        + reg('chuteira', `M${px-16},${by+34} Q${px-18},${by+52} ${px},${by+52} L${px+34},${by+52} Q${px+38},${by+44} ${px+32},${by+37} L${px+16},${by+34} Z`)
+        + '</g>';
+}
+
+function shirtPattern(id){
+    if(id==='vertical'){
+        return reg('listra', 'M172,168 L184,168 L184,322 L172,322 Z')
+             + reg('listra', 'M196,168 L208,168 L208,322 L196,322 Z')
+             + reg('listra', 'M220,168 L232,168 L232,322 L220,322 Z');
+    }
+    if(id==='horizontal'){
+        return reg('listra', 'M150,196 L250,196 L250,216 L150,216 Z')
+             + reg('listra', 'M150,238 L250,238 L250,258 L150,258 Z')
+             + reg('listra', 'M150,280 L250,280 L250,300 L150,300 Z');
+    }
+    if(id==='faixa'){
+        return reg('faixa', 'M120,250 L205,150 L255,180 L165,300 Z');
+    }
+    return '';
+}
+
+function objectSVG(id){
+    switch(id){
+        case 'trofeu':
+            return reg('dourado', 'M286,438 L334,438 L334,452 Q334,488 310,494 Q286,488 286,452 Z')   // cup
+                 + reg('dourado', 'M278,452 Q268,452 270,440 Q272,432 286,442 Z')                      // handle L
+                 + reg('dourado', 'M342,452 Q352,452 350,440 Q348,432 334,442 Z')                      // handle R
+                 + reg('dourado', 'M304,494 L316,494 L316,512 L304,512 Z')                              // stem
+                 + reg('dourado', 'M290,512 L330,512 L336,528 L284,528 Z');                             // base
+        case 'bola':
+            return `<circle class="regiao" data-cor="branco" cx="200" cy="588" r="36"/>`
+                 + reg('preto', 'M200,566 L214,576 L208,592 L192,592 L186,576 Z')                       // center pentagon
+                 + reg('preto', 'M168,580 L180,576 L186,588 L176,596 Z')                                // side patch
+                 + reg('preto', 'M232,580 L220,576 L214,588 L224,596 Z');                               // side patch
+        case 'medalha':
+            return reg('fita', 'M186,150 L196,150 L206,222 L196,222 Z')                                 // ribbon L
+                 + reg('fita', 'M214,150 L204,150 L194,222 L204,222 Z')                                 // ribbon R
+                 + `<circle class="regiao" data-cor="dourado" cx="200" cy="244" r="26"/>`
+                 + reg('estrela', 'M200,230 L204,240 L215,240 L206,247 L210,258 L200,251 L190,258 L194,247 L185,240 L196,240 Z'); // star
+        default: return ''; // luva é desenhada nas mãos
+    }
+}
+
+function buildSVG(cfg){
+    const A = POSE_ANGLES[cfg.pose];
+    const glove = cfg.object === 'luva';
+
+    const legL = legGroup('L', 186, 360, A.legL);
+    const legR = legGroup('R', 214, 360, A.legR);
+    const armL = armGroup('L', 160, 178, A.armL, glove);
+    const armR = armGroup('R', 240, 178, A.armR, glove);
+
+    const shorts = reg('calcao', 'M166,320 L234,320 L242,380 L210,380 L200,346 L190,380 L158,380 Z');
+    const neck   = reg('pele', 'M188,128 L212,128 L212,166 L188,166 Z');
+    const torso  = reg('camisa', 'M163,168 L237,168 L252,206 L234,216 L234,322 L166,322 L166,216 L148,206 Z');
+    const collar = reg('camisa', 'M186,166 L214,166 L208,180 L200,186 L192,180 Z');
+    const pattern = `<g clip-path="url(#torsoClip)">${shirtPattern(cfg.shirt)}</g>`;
+
+    const head = `<circle class="regiao" data-cor="pele" cx="200" cy="95" r="48"/>`
+               + `<circle class="regiao" data-cor="pele" cx="153" cy="98" r="11"/>`   // ear L
+               + `<circle class="regiao" data-cor="pele" cx="247" cy="98" r="11"/>`;  // ear R
+    const face = `<circle cx="184" cy="92" r="5" fill="#2b2b2b"/>`
+               + `<circle cx="216" cy="92" r="5" fill="#2b2b2b"/>`
+               + `<path d="M186,112 Q200,124 214,112" fill="none" stroke="#2b2b2b" stroke-width="3.5" stroke-linecap="round"/>`;
+    const hair = reg('cabelo', hairPath(cfg.hair));
+
+    return `
+      <svg id="arte" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 660">
+        <defs>
+          <clipPath id="torsoClip">
+            <path d="M163,168 L237,168 L252,206 L234,216 L234,322 L166,322 L166,216 L148,206 Z"/>
+          </clipPath>
+        </defs>
+        <style>
+          #arte .regiao{ fill:#ffffff; stroke:#222; stroke-width:3; stroke-linejoin:round; }
+        </style>
+        ${legL}${legR}
+        ${shorts}
+        ${neck}
+        ${torso}${collar}${pattern}
+        ${armL}${armR}
+        ${head}
+        ${hair}
+        ${face}
+        ${objectSVG(cfg.object)}
+      </svg>`;
+}
+
+/* miniatura do jogador para o passo de escolha de cabelo */
+function miniPlayer(hair){
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(0,30) scale(0.8)" fill="#ffe0bd" stroke="#222" stroke-width="3">
+          <circle cx="100" cy="60" r="42"/>
+        </g>
+        <g transform="translate(0,30) scale(0.8)" fill="#8b5a2b" stroke="#222" stroke-width="3">
+          ${miniHair(hair)}
+        </g>
+        <g transform="translate(0,30) scale(0.8)" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linecap="round">
+          <circle cx="86" cy="58" r="4" fill="#2b2b2b" stroke="none"/>
+          <circle cx="114" cy="58" r="4" fill="#2b2b2b" stroke="none"/>
+          <path d="M86,76 Q100,86 114,76"/>
+        </g>
+    </svg>`;
+}
+function miniHair(id){
+    switch(id){
+        case 'cacheado': return '<path d="M56,58 Q50,24 72,24 Q72,10 92,16 Q100,4 110,16 Q130,10 130,24 Q150,24 144,58 Q134,38 120,38 Q110,28 100,34 Q86,28 78,38 Q64,38 56,58 Z"/>';
+        case 'moicano':  return '<path d="M88,20 Q100,-6 112,20 L112,46 Q100,40 88,46 Z"/>';
+        case 'longo':    return '<path d="M54,64 Q52,16 100,12 Q148,16 146,64 L146,118 Q136,118 134,86 Q128,40 100,36 Q72,40 66,86 Q64,118 54,118 Z"/>';
+        default:         return '<path d="M58,52 Q56,16 100,12 Q144,16 142,52 Q124,30 100,28 Q76,30 58,52 Z"/>';
+    }
+}
+
+/* ====================== PALETA DE CORES ====================== */
+const PALETTE = [
+    {n:'Pele clara', c:'#ffe0bd'},
+    {n:'Pele média', c:'#e0ac69'},
+    {n:'Pele morena',c:'#a0623b'},
+    {n:'Pele escura',c:'#6b4226'},
+    {n:'Loiro',      c:'#f4d35e'},
+    {n:'Castanho',   c:'#8b5a2b'},
+    {n:'Preto',      c:'#2b2b2b'},
+    {n:'Branco',     c:'#ffffff'},
+    {n:'Cinza',      c:'#bdc3c7'},
+    {n:'Dourado',    c:'#d4af37'},
+    {n:'Vermelho',   c:'#e74c3c'},
+    {n:'Laranja',    c:'#e67e22'},
+    {n:'Amarelo',    c:'#f1c40f'},
+    {n:'Verde',      c:'#27ae60'},
+    {n:'Azul',       c:'#3498db'},
+    {n:'Azul escuro',c:'#2c3e50'},
+    {n:'Roxo',       c:'#9b59b6'},
+    {n:'Rosa',       c:'#ff6fa5'},
+];
+
+/* ====================== ESTADO E FLUXO ====================== */
+const STEPS = [
+    { key:'player', title:'1. Escolha o jogador', sub:'Qual cabelo você quer?', list:PLAYERS, kind:'player' },
+    { key:'object', title:'2. Escolha um objeto', sub:'O que o craque vai ganhar?', list:OBJECTS, kind:'emoji' },
+    { key:'pose',   title:'3. Escolha a pose',    sub:'Como ele vai posar?', list:POSES, kind:'emoji' },
+    { key:'shirt',  title:'4. Escolha a camisa',  sub:'Pronto pra pintar depois!', list:SHIRTS, kind:'emoji' },
+];
+
+const cfg = { player:null, object:null, pose:null, shirt:null };
+let stepIndex = 0;
+let selectedColor = '#e74c3c';
+
+const $ = id => document.getElementById(id);
+function show(screen){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    $(screen).classList.add('active');
+    window.scrollTo(0,0);
+}
+
+function renderDots(){
+    $('dots').innerHTML = STEPS.map((_,i)=>{
+        const cls = i<stepIndex ? 'done' : (i===stepIndex ? 'current' : '');
+        return `<span class="dot ${cls}"></span>`;
+    }).join('');
+}
+
+function renderStep(){
+    const step = STEPS[stepIndex];
+    $('step-title').textContent = step.title;
+    $('step-sub').textContent = step.sub;
+    renderDots();
+    const current = cfg[step.key];
+    $('options').innerHTML = step.list.map(o=>{
+        const art = step.kind==='player'
+            ? `<span class="opt-art">${miniPlayer(o.hair)}</span>`
+            : `<span class="opt-emoji">${o.emoji}</span>`;
+        const sel = current===o.id ? ' selected' : '';
+        return `<div class="opt${sel}" data-id="${o.id}">${art}<span class="opt-name">${o.name}</span></div>`;
+    }).join('');
+    $('options').querySelectorAll('.opt').forEach(el=>{
+        el.addEventListener('click', ()=>{
+            cfg[step.key] = el.dataset.id;
+            renderStep();
+            updateNext();
+        });
+    });
+    $('btn-back').textContent = stepIndex===0 ? '◂ Voltar' : '◂ Anterior';
+    $('btn-next').textContent = stepIndex===STEPS.length-1 ? 'Pintar! 🎨' : 'Próximo ▸';
+    updateNext();
+}
+
+function updateNext(){
+    const ready = !!cfg[STEPS[stepIndex].key];
+    $('btn-next').disabled = !ready;
+    $('btn-next').style.opacity = ready ? '1' : '.5';
+}
+
+function goNext(){
+    if(!cfg[STEPS[stepIndex].key]) return;
+    if(stepIndex < STEPS.length-1){
+        stepIndex++;
+        renderStep();
+    } else {
+        startPainting();
+    }
+}
+function goBack(){
+    if(stepIndex===0){ show('screen-title'); return; }
+    stepIndex--;
+    renderStep();
+}
+
+/* ====================== PINTURA ====================== */
+function startPainting(){
+    $('arte-holder').innerHTML = buildSVG(cfg);
+    const svg = $('arte');
+    svg.addEventListener('pointerdown', e=>{
+        const t = e.target;
+        if(t.classList && t.classList.contains('regiao')){
+            t.style.fill = selectedColor;
+        }
+    });
+    renderPalette();
+    show('screen-paint');
+}
+
+function renderPalette(){
+    const pal = $('palette');
+    pal.innerHTML = PALETTE.map(p=>
+        `<div class="swatch" data-c="${p.c}" title="${p.n}" style="background:${p.c}"></div>`
+    ).join('') + `<div class="swatch eraser" data-c="#ffffff" title="Borracha">🧽</div>`;
+    pal.querySelectorAll('.swatch').forEach(s=>{
+        s.addEventListener('click', ()=>{
+            selectedColor = s.dataset.c;
+            pal.querySelectorAll('.swatch').forEach(x=>x.classList.remove('sel'));
+            s.classList.add('sel');
+        });
+    });
+    // seleciona vermelho por padrão
+    selectedColor = '#e74c3c';
+    const def = pal.querySelector('[data-c="#e74c3c"]');
+    if(def) def.classList.add('sel');
+}
+
+function clearAll(){
+    $('arte').querySelectorAll('.regiao').forEach(r=>{ r.style.fill = '#ffffff'; });
+}
+
+function saveImage(){
+    const svg = $('arte');
+    const data = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    const svgBlob = new Blob([data], {type:'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(svgBlob);
+    img.onload = ()=>{
+        const scale = 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = 400*scale;
+        canvas.height = 660*scale;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(blob=>{
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'meu-craque.png';
+            a.click();
+            setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+        });
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); alert('Não consegui salvar a imagem 😢'); };
+    img.src = url;
+}
+
+/* ====================== LIGAÇÕES ====================== */
+$('btn-start').addEventListener('click', ()=>{ stepIndex=0; renderStep(); show('screen-wizard'); });
+$('btn-next').addEventListener('click', goNext);
+$('btn-back').addEventListener('click', goBack);
+$('btn-remake').addEventListener('click', ()=>{ stepIndex=0; renderStep(); show('screen-wizard'); });
+$('btn-clear').addEventListener('click', clearAll);
+$('btn-save').addEventListener('click', saveImage);
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+}
+</script>
+</body>
+</html>
