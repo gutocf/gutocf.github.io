@@ -161,9 +161,9 @@
         }
         .opt:hover { transform: translateY(-5px); }
         .opt.selected { border-color: #f1c40f; box-shadow: 0 0 0 4px rgba(241,196,15,.4), 0 8px 18px rgba(0,0,0,.2); }
-        .opt .opt-art { display:block; height: 92px; margin-bottom: 8px; }
+        .opt .opt-art { display:block; height: 100px; margin-bottom: 8px; }
         .opt .opt-art svg { height: 100%; width: 100%; }
-        .opt .opt-emoji { font-size: 3.4rem; line-height:92px; display:block; }
+        .opt .opt-emoji { font-size: 3.4rem; line-height:100px; display:block; }
         .opt .opt-name { font-family: 'Fredoka One', cursive; font-size: 1.05rem; }
 
         .nav-row { display:flex; gap:14px; align-items:center; }
@@ -183,7 +183,7 @@
             padding: 10px;
             box-shadow: 0 14px 36px rgba(0,0,0,0.25);
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
         }
         #arte { width: 100%; height: auto; display:block; touch-action: manipulation; }
         #arte .regiao { cursor: pointer; transition: fill .08s; }
@@ -272,11 +272,13 @@
 
 <script>
 /* ====================== DADOS DAS ESCOLHAS ====================== */
+/* Jogadores: desenhos ORIGINAIS, reconhecíveis por cabelo/barba/número.
+   Não são cópias de fotos — são ilustrações de linha feitas para colorir. */
 const PLAYERS = [
-    { id:'curtos',   name:'Cabelo curto', hair:'curtos' },
-    { id:'cacheado', name:'Cacheado',     hair:'cacheado' },
-    { id:'moicano',  name:'Moicano',      hair:'moicano' },
-    { id:'longo',    name:'Cabelo longo', hair:'longo' },
+    { id:'messi',  name:'Messi',     hair:'messi',  beard:true,  num:'10' },
+    { id:'cr7',    name:'Cristiano', hair:'cr7',    beard:false, num:'7'  },
+    { id:'neymar', name:'Neymar',    hair:'neymar', beard:false, num:'10' },
+    { id:'mbappe', name:'Mbappé',    hair:'mbappe', beard:false, num:'10' },
 ];
 const OBJECTS = [
     { id:'trofeu',   name:'Troféu',  emoji:'🏆' },
@@ -291,162 +293,197 @@ const POSES = [
     { id:'goleiro',     name:'Goleiro',      emoji:'🥅' },
 ];
 const SHIRTS = [
-    { id:'lisa',     name:'Lisa',             emoji:'👕' },
-    { id:'vertical', name:'Listras em pé',    emoji:'🎽' },
-    { id:'horizontal',name:'Listras deitadas',emoji:'🎽' },
-    { id:'faixa',    name:'Faixa',            emoji:'🏳️' },
+    { id:'lisa',      name:'Lisa',             emoji:'👕' },
+    { id:'vertical',  name:'Listras em pé',    emoji:'🎽' },
+    { id:'horizontal',name:'Listras deitadas', emoji:'🎽' },
+    { id:'faixa',     name:'Faixa',            emoji:'🏳️' },
 ];
 
 const POSE_ANGLES = {
-    parado:      { armL:-8,   armR:8,   legL:5,   legR:-5  },
-    chutando:    { armL:-30,  armR:25,  legL:8,   legR:-58 },
-    comemorando: { armL:-150, armR:150, legL:5,   legR:-5  },
-    goleiro:     { armL:-78,  armR:78,  legL:22,  legR:-22 },
+    parado:      { armL:8,    armR:-8,   legL:4,   legR:-4  },
+    chutando:    { armL:26,   armR:-20,  legL:6,   legR:-55 },
+    comemorando: { armL:148,  armR:-148, legL:4,   legR:-4  },
+    goleiro:     { armL:76,   armR:-76,  legL:20,  legR:-20 },
 };
 
 /* ====================== CONSTRUÇÃO DO SVG ====================== */
 function reg(cor, d){ return `<path class="regiao" data-cor="${cor}" d="${d}"/>`; }
+function regC(cor, cx, cy, r){ return `<circle class="regiao" data-cor="${cor}" cx="${cx}" cy="${cy}" r="${r}"/>`; }
+function regE(cor, cx, cy, rx, ry){ return `<ellipse class="regiao" data-cor="${cor}" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`; }
 
+/* --- cabeça, cabelo, barba e rosto (reaproveitado no preview) --- */
 function hairPath(id){
     switch(id){
-        case 'cacheado':
-            return 'M150,92 Q143,52 168,50 Q166,34 190,40 Q200,26 212,40 Q236,34 234,52 Q259,52 252,92 Q241,68 226,66 Q216,54 200,60 Q184,54 174,66 Q159,68 150,92 Z';
-        case 'moicano':
-            return 'M185,46 Q200,18 216,46 L216,72 Q200,66 185,72 Z';
-        case 'longo':
-            return 'M148,98 Q146,46 200,40 Q254,46 252,98 L252,156 Q241,156 238,122 Q231,70 200,66 Q169,70 162,122 Q159,156 148,156 Z';
-        default: /* curtos */
-            return 'M152,84 Q150,46 200,42 Q250,46 248,84 Q229,60 200,58 Q171,60 152,84 Z';
+        case 'cr7': /* curto e arrumado */
+            return 'M167,86 C165,52 186,44 200,44 C214,44 235,52 233,86 C229,70 221,62 211,60 C207,53 193,53 189,60 C179,62 171,70 167,86 Z';
+        case 'neymar': /* topete / laterais raspadas */
+            return 'M180,80 C178,50 191,40 200,40 C209,40 222,50 220,80 C217,64 213,58 207,56 C205,48 195,48 193,56 C187,58 183,64 180,80 Z';
+        case 'mbappe': /* bem curto, colado */
+            return 'M170,80 C170,54 188,46 200,46 C212,46 230,54 230,80 C226,68 218,62 210,61 C206,56 194,56 190,61 C182,62 174,68 170,80 Z';
+        default: /* messi: cheio, com volume */
+            return 'M165,90 C161,52 184,42 200,42 C216,42 239,52 235,90 C232,74 224,64 215,62 C209,52 191,52 185,62 C176,64 168,74 165,90 Z';
     }
 }
+function beardPath(){
+    return 'M172,112 C176,138 190,150 200,150 C210,150 224,138 228,112 '
+         + 'C224,124 214,130 200,130 C186,130 176,124 172,112 Z';
+}
+function faceFeatures(){
+    /* traços finos do rosto (não são áreas de pintar) */
+    return `<g fill="none" stroke="#2b2b2b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M178,90 Q187,85 196,90"/>
+        <path d="M204,90 Q213,85 222,90"/>
+        <path d="M180,99 Q188,94 196,99 Q188,103 180,99 Z"/>
+        <path d="M204,99 Q212,94 220,99 Q212,103 204,99 Z"/>
+        <path d="M200,100 L196,114 Q200,117 205,114"/>
+        <path d="M188,126 Q200,133 212,126"/>
+      </g>
+      <circle cx="188" cy="99" r="2.4" fill="#2b2b2b"/>
+      <circle cx="212" cy="99" r="2.4" fill="#2b2b2b"/>`;
+}
+function headGroup(p){
+    const face = reg('pele', 'M168,72 C168,48 188,40 200,40 C212,40 232,48 232,72 '
+        + 'C232,94 230,108 222,120 C215,132 207,140 200,140 C193,140 185,132 178,120 '
+        + 'C170,108 168,94 168,72 Z');
+    const earL = reg('pele', 'M168,92 C160,90 158,104 166,108 C170,109 172,106 172,102 Z');
+    const earR = reg('pele', 'M232,92 C240,90 242,104 234,108 C230,109 228,106 228,102 Z');
+    const hair = reg('cabelo', hairPath(p.hair));
+    const beard = p.beard ? reg('cabelo', beardPath()) : '';
+    return face + earL + earR + hair + beard + faceFeatures();
+}
 
-function armGroup(side, px, py, angle, glove){
+/* --- braços e pernas (rotacionados conforme a pose) --- */
+function armGroup(px, py, angle, glove){
     const hand = glove
-        ? reg('luva', `M${px-19},${py+108} Q${px-21},${py+138} ${px},${py+140} Q${px+21},${py+138} ${px+19},${py+108} Z`)
-          + reg('luva', `M${px-19},${py+108} L${px+19},${py+108} L${px+19},${py+118} L${px-19},${py+118} Z`)
-        : `<circle class="regiao" data-cor="pele" cx="${px}" cy="${py+126}" r="16"/>`;
+        ? reg('luva', `M${px-13},${py+150} C${px-18},${py+166} ${px-9},${py+180} ${px},${py+180} `
+                    + `C${px+9},${py+180} ${px+18},${py+166} ${px+13},${py+150} Z`)
+          + reg('luva', `M${px-13},${py+150} L${px+13},${py+150} L${px+12},${py+158} L${px-12},${py+158} Z`)
+        : reg('pele', `M${px-12},${py+150} C${px-16},${py+164} ${px-8},${py+176} ${px},${py+176} `
+                    + `C${px+8},${py+176} ${px+16},${py+164} ${px+12},${py+150} Z`);
     return `<g transform="rotate(${angle} ${px} ${py})">`
-        + reg('pele', `M${px-13},${py} L${px+13},${py} Q${px+15},${py} ${px+15},${py+13} L${px+15},${py+112} Q${px+15},${py+125} ${px},${py+125} Q${px-15},${py+125} ${px-15},${py+112} L${px-15},${py+13} Q${px-15},${py} ${px-13},${py} Z`)
+        + reg('pele', `M${px-12},${py} C${px-13},${py} ${px-14},${py+4} ${px-14},${py+9} `
+            + `L${px-11},${py+150} C${px-11},${py+157} ${px+11},${py+157} ${px+11},${py+150} `
+            + `L${px+14},${py+9} C${px+14},${py+4} ${px+13},${py} ${px+12},${py} Z`)
         + hand
         + '</g>';
 }
-
-function legGroup(side, px, py, angle){
-    const by = py+150; // bottom of leg
+function legGroup(px, py, angle){
+    const sb = py+200;   // topo da meia
+    const bt = sb+54;    // topo da chuteira
     return `<g transform="rotate(${angle} ${px} ${py})">`
-        + reg('pele', `M${px-15},${py} L${px+15},${py} Q${px+15},${py} ${px+15},${py+14} L${px+15},${by} L${px-15},${by} L${px-15},${py+14} Q${px-15},${py} ${px-15},${py} Z`)
-        + reg('meia', `M${px-16},${by} L${px+16},${by} L${px+16},${by+34} L${px-16},${by+34} Z`)
-        + reg('chuteira', `M${px-16},${by+34} Q${px-18},${by+52} ${px},${by+52} L${px+34},${by+52} Q${px+38},${by+44} ${px+32},${by+37} L${px+16},${by+34} Z`)
+        + reg('pele', `M${px-13},${py} C${px-14},${py} ${px-15},${py+6} ${px-15},${py+12} `
+            + `L${px-12},${sb} L${px+12},${sb} L${px+15},${py+12} `
+            + `C${px+15},${py+6} ${px+14},${py} ${px+13},${py} Z`)
+        + reg('meia', `M${px-12},${sb} L${px+12},${sb} L${px+13},${bt} L${px-13},${bt} Z`)
+        + reg('chuteira', `M${px-13},${bt} C${px-16},${bt+16} ${px-6},${bt+24} ${px},${bt+24} `
+            + `L${px+36},${bt+24} C${px+42},${bt+24} ${px+42},${bt+12} ${px+35},${bt+6} L${px+13},${bt} Z`)
         + '</g>';
 }
 
+/* --- padrões da camisa (recortados no torso) --- */
 function shirtPattern(id){
     if(id==='vertical'){
-        return reg('listra', 'M172,168 L184,168 L184,322 L172,322 Z')
-             + reg('listra', 'M196,168 L208,168 L208,322 L196,322 Z')
-             + reg('listra', 'M220,168 L232,168 L232,322 L220,322 Z');
+        return reg('listra','M176,176 L188,176 L188,360 L176,360 Z')
+             + reg('listra','M196,176 L208,176 L208,360 L196,360 Z')
+             + reg('listra','M216,176 L228,176 L228,360 L216,360 Z');
     }
     if(id==='horizontal'){
-        return reg('listra', 'M150,196 L250,196 L250,216 L150,216 Z')
-             + reg('listra', 'M150,238 L250,238 L250,258 L150,258 Z')
-             + reg('listra', 'M150,280 L250,280 L250,300 L150,300 Z');
+        return reg('listra','M150,206 L250,206 L250,228 L150,228 Z')
+             + reg('listra','M150,254 L250,254 L250,276 L150,276 Z')
+             + reg('listra','M150,302 L250,302 L250,324 L150,324 Z');
     }
     if(id==='faixa'){
-        return reg('faixa', 'M120,250 L205,150 L255,180 L165,300 Z');
+        return reg('faixa','M120,260 L210,160 L262,196 L172,320 Z');
     }
     return '';
 }
 
+/* --- objetos --- */
 function objectSVG(id){
+    const tcx = 298;
     switch(id){
         case 'trofeu':
-            return reg('dourado', 'M286,438 L334,438 L334,452 Q334,488 310,494 Q286,488 286,452 Z')   // cup
-                 + reg('dourado', 'M278,452 Q268,452 270,440 Q272,432 286,442 Z')                      // handle L
-                 + reg('dourado', 'M342,452 Q352,452 350,440 Q348,432 334,442 Z')                      // handle R
-                 + reg('dourado', 'M304,494 L316,494 L316,512 L304,512 Z')                              // stem
-                 + reg('dourado', 'M290,512 L330,512 L336,528 L284,528 Z');                             // base
+            return regE('dourado', tcx, 312, 42, 9)
+                 + reg('dourado', `M${tcx-40},312 C${tcx-40},356 ${tcx-22},374 ${tcx},374 C${tcx+22},374 ${tcx+40},356 ${tcx+40},312 Z`)
+                 + reg('dourado', `M${tcx-38},318 C${tcx-66},316 ${tcx-66},354 ${tcx-44},358 L${tcx-43},349 C${tcx-58},346 ${tcx-57},325 ${tcx-38},327 Z`)
+                 + reg('dourado', `M${tcx+38},318 C${tcx+66},316 ${tcx+66},354 ${tcx+44},358 L${tcx+43},349 C${tcx+58},346 ${tcx+57},325 ${tcx+38},327 Z`)
+                 + reg('dourado', `M${tcx-7},374 L${tcx+7},374 L${tcx+6},392 L${tcx-6},392 Z`)
+                 + regE('dourado', tcx, 396, 14, 7)
+                 + reg('dourado', `M${tcx-30},401 L${tcx+30},401 L${tcx+30},408 L${tcx-30},408 Z`)
+                 + reg('castanho', `M${tcx-26},408 L${tcx+26},408 L${tcx+30},436 C${tcx+30},442 ${tcx+25},444 ${tcx+19},444 L${tcx-19},444 C${tcx-25},444 ${tcx-30},442 ${tcx-30},436 Z`);
         case 'bola':
-            return `<circle class="regiao" data-cor="branco" cx="200" cy="588" r="36"/>`
-                 + reg('preto', 'M200,566 L214,576 L208,592 L192,592 L186,576 Z')                       // center pentagon
-                 + reg('preto', 'M168,580 L180,576 L186,588 L176,596 Z')                                // side patch
-                 + reg('preto', 'M232,580 L220,576 L214,588 L224,596 Z');                               // side patch
+            return regC('branco', 200, 706, 36)
+                 + reg('preto', 'M200,684 L214,694 L208,710 L192,710 L186,694 Z')
+                 + reg('preto', 'M168,698 L180,694 L186,706 L176,714 Z')
+                 + reg('preto', 'M232,698 L220,694 L214,706 L224,714 Z')
+                 + reg('preto', 'M196,730 L204,730 L208,740 L192,740 Z');
         case 'medalha':
-            return reg('fita', 'M186,150 L196,150 L206,222 L196,222 Z')                                 // ribbon L
-                 + reg('fita', 'M214,150 L204,150 L194,222 L204,222 Z')                                 // ribbon R
-                 + `<circle class="regiao" data-cor="dourado" cx="200" cy="244" r="26"/>`
-                 + reg('estrela', 'M200,230 L204,240 L215,240 L206,247 L210,258 L200,251 L190,258 L194,247 L185,240 L196,240 Z'); // star
+            return reg('fita', 'M186,150 L196,150 L207,222 L197,222 Z')
+                 + reg('fita', 'M214,150 L204,150 L193,222 L203,222 Z')
+                 + regC('dourado', 200, 246, 27)
+                 + reg('estrela', 'M200,231 L204,242 L216,242 L206,249 L210,260 L200,253 L190,260 L194,249 L184,242 L196,242 Z');
         default: return ''; // luva é desenhada nas mãos
     }
 }
 
 function buildSVG(cfg){
+    const p = PLAYERS.find(x=>x.id===cfg.player) || PLAYERS[0];
     const A = POSE_ANGLES[cfg.pose];
     const glove = cfg.object === 'luva';
 
-    const legL = legGroup('L', 186, 360, A.legL);
-    const legR = legGroup('R', 214, 360, A.legR);
-    const armL = armGroup('L', 160, 178, A.armL, glove);
-    const armR = armGroup('R', 240, 178, A.armR, glove);
+    const legL = legGroup(186, 422, A.legL);
+    const legR = legGroup(214, 422, A.legR);
+    const armL = armGroup(160, 196, A.armL, glove);
+    const armR = armGroup(240, 196, A.armR, glove);
 
-    const shorts = reg('calcao', 'M166,320 L234,320 L242,380 L210,380 L200,346 L190,380 L158,380 Z');
-    const neck   = reg('pele', 'M188,128 L212,128 L212,166 L188,166 Z');
-    const torso  = reg('camisa', 'M163,168 L237,168 L252,206 L234,216 L234,322 L166,322 L166,216 L148,206 Z');
-    const collar = reg('camisa', 'M186,166 L214,166 L208,180 L200,186 L192,180 Z');
+    const shorts = reg('calcao', 'M168,358 L232,358 L240,432 L210,432 L200,394 L190,432 L160,432 Z');
+    const neck   = reg('pele', 'M190,134 L210,134 L213,174 L187,174 Z');
+    const torsoD = 'M158,176 C150,176 150,182 150,188 L150,212 C150,216 148,218 146,220 L160,240 '
+                 + 'C162,236 164,234 166,234 L168,352 C168,358 172,361 178,361 L222,361 '
+                 + 'C228,361 232,358 232,352 L234,234 C236,234 238,236 240,240 L254,220 '
+                 + 'C252,218 250,216 250,212 L250,188 C250,182 250,176 242,176 '
+                 + 'C234,176 230,180 222,182 L214,184 C208,186 192,186 186,184 L178,182 '
+                 + 'C170,180 166,176 158,176 Z';
+    const torso  = reg('camisa', torsoD);
+    const collar = reg('camisa', 'M186,184 L200,198 L214,184 L209,176 L200,186 L191,176 Z');
     const pattern = `<g clip-path="url(#torsoClip)">${shirtPattern(cfg.shirt)}</g>`;
-
-    const head = `<circle class="regiao" data-cor="pele" cx="200" cy="95" r="48"/>`
-               + `<circle class="regiao" data-cor="pele" cx="153" cy="98" r="11"/>`   // ear L
-               + `<circle class="regiao" data-cor="pele" cx="247" cy="98" r="11"/>`;  // ear R
-    const face = `<circle cx="184" cy="92" r="5" fill="#2b2b2b"/>`
-               + `<circle cx="216" cy="92" r="5" fill="#2b2b2b"/>`
-               + `<path d="M186,112 Q200,124 214,112" fill="none" stroke="#2b2b2b" stroke-width="3.5" stroke-linecap="round"/>`;
-    const hair = reg('cabelo', hairPath(cfg.hair));
+    const numero = `<text x="200" y="286" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" `
+                 + `font-size="48" font-weight="bold" fill="none" stroke="#2b2b2b" stroke-width="1.6">${p.num}</text>`;
+    const sleeveSeams = `<g fill="none" stroke="#222" stroke-width="2">`
+                 + `<path d="M166,234 L160,240"/><path d="M234,234 L240,240"/></g>`;
 
     return `
-      <svg id="arte" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 660">
+      <svg id="arte" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 770">
         <defs>
-          <clipPath id="torsoClip">
-            <path d="M163,168 L237,168 L252,206 L234,216 L234,322 L166,322 L166,216 L148,206 Z"/>
-          </clipPath>
+          <clipPath id="torsoClip"><path d="${torsoD}"/></clipPath>
         </defs>
         <style>
-          #arte .regiao{ fill:#ffffff; stroke:#222; stroke-width:3; stroke-linejoin:round; }
+          #arte .regiao{ fill:#ffffff; stroke:#222; stroke-width:2.6; stroke-linejoin:round; }
         </style>
         ${legL}${legR}
         ${shorts}
         ${neck}
-        ${torso}${collar}${pattern}
+        ${torso}${collar}${pattern}${sleeveSeams}${numero}
         ${armL}${armR}
-        ${head}
-        ${hair}
-        ${face}
+        ${headGroup(p)}
         ${objectSVG(cfg.object)}
       </svg>`;
 }
 
-/* miniatura do jogador para o passo de escolha de cabelo */
-function miniPlayer(hair){
+/* miniatura do rosto do jogador para o passo de escolha */
+function miniPlayer(p){
     return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <g transform="translate(0,30) scale(0.8)" fill="#ffe0bd" stroke="#222" stroke-width="3">
-          <circle cx="100" cy="60" r="42"/>
-        </g>
-        <g transform="translate(0,30) scale(0.8)" fill="#8b5a2b" stroke="#222" stroke-width="3">
-          ${miniHair(hair)}
-        </g>
-        <g transform="translate(0,30) scale(0.8)" fill="none" stroke="#2b2b2b" stroke-width="3" stroke-linecap="round">
-          <circle cx="86" cy="58" r="4" fill="#2b2b2b" stroke="none"/>
-          <circle cx="114" cy="58" r="4" fill="#2b2b2b" stroke="none"/>
-          <path d="M86,76 Q100,86 114,76"/>
+        <style>
+          .mp-pele{ fill:#ffe0bd; stroke:#222; stroke-width:3; }
+          .mp-cab{ fill:#5a3a22; stroke:#222; stroke-width:3; }
+        </style>
+        <g transform="translate(-100,-22) scale(1.6)">
+          <path class="mp-pele" d="M168,72 C168,48 188,40 200,40 C212,40 232,48 232,72 C232,94 230,108 222,120 C215,132 207,140 200,140 C193,140 185,132 178,120 C170,108 168,94 168,72 Z"/>
+          <path class="mp-cab" d="${hairPath(p.hair)}"/>
+          ${p.beard ? `<path class="mp-cab" d="${beardPath()}"/>` : ''}
+          ${faceFeatures()}
         </g>
     </svg>`;
-}
-function miniHair(id){
-    switch(id){
-        case 'cacheado': return '<path d="M56,58 Q50,24 72,24 Q72,10 92,16 Q100,4 110,16 Q130,10 130,24 Q150,24 144,58 Q134,38 120,38 Q110,28 100,34 Q86,28 78,38 Q64,38 56,58 Z"/>';
-        case 'moicano':  return '<path d="M88,20 Q100,-6 112,20 L112,46 Q100,40 88,46 Z"/>';
-        case 'longo':    return '<path d="M54,64 Q52,16 100,12 Q148,16 146,64 L146,118 Q136,118 134,86 Q128,40 100,36 Q72,40 66,86 Q64,118 54,118 Z"/>';
-        default:         return '<path d="M58,52 Q56,16 100,12 Q144,16 142,52 Q124,30 100,28 Q76,30 58,52 Z"/>';
-    }
 }
 
 /* ====================== PALETA DE CORES ====================== */
@@ -465,6 +502,7 @@ const PALETTE = [
     {n:'Laranja',    c:'#e67e22'},
     {n:'Amarelo',    c:'#f1c40f'},
     {n:'Verde',      c:'#27ae60'},
+    {n:'Azul claro', c:'#74b9ff'},
     {n:'Azul',       c:'#3498db'},
     {n:'Azul escuro',c:'#2c3e50'},
     {n:'Roxo',       c:'#9b59b6'},
@@ -473,8 +511,8 @@ const PALETTE = [
 
 /* ====================== ESTADO E FLUXO ====================== */
 const STEPS = [
-    { key:'player', title:'1. Escolha o jogador', sub:'Qual cabelo você quer?', list:PLAYERS, kind:'player' },
-    { key:'object', title:'2. Escolha um objeto', sub:'O que o craque vai ganhar?', list:OBJECTS, kind:'emoji' },
+    { key:'player', title:'1. Escolha o craque', sub:'Qual jogador você quer pintar?', list:PLAYERS, kind:'player' },
+    { key:'object', title:'2. Escolha um objeto', sub:'O que o craque vai segurar?', list:OBJECTS, kind:'emoji' },
     { key:'pose',   title:'3. Escolha a pose',    sub:'Como ele vai posar?', list:POSES, kind:'emoji' },
     { key:'shirt',  title:'4. Escolha a camisa',  sub:'Pronto pra pintar depois!', list:SHIRTS, kind:'emoji' },
 ];
@@ -505,7 +543,7 @@ function renderStep(){
     const current = cfg[step.key];
     $('options').innerHTML = step.list.map(o=>{
         const art = step.kind==='player'
-            ? `<span class="opt-art">${miniPlayer(o.hair)}</span>`
+            ? `<span class="opt-art">${miniPlayer(o)}</span>`
             : `<span class="opt-emoji">${o.emoji}</span>`;
         const sel = current===o.id ? ' selected' : '';
         return `<div class="opt${sel}" data-id="${o.id}">${art}<span class="opt-name">${o.name}</span></div>`;
@@ -569,7 +607,6 @@ function renderPalette(){
             s.classList.add('sel');
         });
     });
-    // seleciona vermelho por padrão
     selectedColor = '#e74c3c';
     const def = pal.querySelector('[data-c="#e74c3c"]');
     if(def) def.classList.add('sel');
@@ -589,7 +626,7 @@ function saveImage(){
         const scale = 2;
         const canvas = document.createElement('canvas');
         canvas.width = 400*scale;
-        canvas.height = 660*scale;
+        canvas.height = 770*scale;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0,0,canvas.width,canvas.height);
