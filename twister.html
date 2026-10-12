@@ -249,6 +249,40 @@
             50% { box-shadow: 0 5px 30px rgba(255,255,255,0.4); }
         }
 
+        .player-chip {
+            border: none;
+            font-family: 'Nunito', sans-serif;
+            cursor: pointer;
+        }
+
+        .player-chip.eliminated {
+            opacity: 0.45;
+            text-decoration: line-through;
+            filter: grayscale(0.8);
+        }
+
+        .players-hint {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            margin-top: -8px;
+        }
+
+        .result-winner {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.8rem;
+            color: white;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            text-align: center;
+            display: none;
+        }
+
+        .result-winner.show {
+            display: block;
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
         /* === COLUNA ESQUERDA === */
         .left-column {
             display: flex;
@@ -623,6 +657,60 @@
             pointer-events: none;
         }
 
+        .mat-cell.eliminated {
+            opacity: 0.35;
+            filter: grayscale(0.6);
+        }
+
+        /* Area do Ar (membros levantados) */
+        .air-zone {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            min-height: 44px;
+            background: #9b59b6;
+            border-radius: 22px;
+            padding: 6px 14px;
+            margin-bottom: 12px;
+        }
+
+        .air-zone-label {
+            font-family: 'Fredoka One', cursive;
+            color: white;
+            font-size: 1rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+
+        .air-zone-empty {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .air-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid var(--player-color);
+            border-radius: 14px;
+            padding: 2px 8px;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+        }
+
+        .air-item.latest {
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .air-item.eliminated {
+            opacity: 0.35;
+        }
+
         /* Legenda dos jogadores */
         .mat-legend {
             display: flex;
@@ -647,6 +735,11 @@
             width: 14px;
             height: 14px;
             border-radius: 50%;
+        }
+
+        .mat-legend-item.eliminated {
+            opacity: 0.5;
+            text-decoration: line-through;
         }
 
         /* === BOTOES DE CONTROLE === */
@@ -864,6 +957,7 @@
         <span class="game-title">TWISTER</span>
 
         <div class="players-bar" id="players-bar"></div>
+        <div class="players-hint">Toque no nome para eliminar (caiu ou encostou joelho/cotovelo no chão)</div>
 
         <div class="left-top-controls">
             <button class="btn-back" onclick="backToSetup()">&#8592; Voltar</button>
@@ -889,6 +983,7 @@
         </div>
 
         <div class="result-display">
+            <div class="result-winner" id="result-winner"></div>
             <div class="result-player" id="result-player"></div>
             <div class="result-card" id="result-card">
                 <div class="result-body-part" id="result-body"></div>
@@ -911,6 +1006,7 @@
     <div class="right-column">
         <div class="mat-container">
             <div class="mat-title">Tapete</div>
+            <div class="air-zone" id="air-zone"></div>
             <div class="mat-grid" id="mat-grid"></div>
             <div class="mat-legend" id="mat-legend"></div>
         </div>
@@ -925,6 +1021,7 @@
         { name: 'Azul',     hex: '#1e90ff', light: '#54b0ff' },
         { name: 'Amarelo',  hex: '#f7df1e', light: '#ffe44d' },
         { name: 'Verde',    hex: '#2ed573', light: '#5aff8f' },
+        { name: 'Ar',       hex: '#9b59b6', light: '#b77fd1', icon: '☁️', isAir: true },
     ];
 
     // Cores do tapete na ordem real: Verde, Amarelo, Azul, Vermelho (como na foto)
@@ -958,6 +1055,7 @@
     const PLAYER_COLORS = ['#e44d26', '#1e90ff', '#2ed573', '#f7df1e', '#9b59b6', '#e67e22', '#1abc9c', '#e84393'];
 
     let players = [];
+    let eliminated = [];  // eliminated[i] = true se o jogador i caiu
     let currentPlayerIndex = 0;
     let isSpinning = false;
     let currentRotation = 0;
@@ -971,6 +1069,8 @@
 
     // Tapete fixo 6x4 (como o real). Cada cell = null ou { player, playerIndex, part, isLatest }
     let matData = [];  // matData[row][col]
+    // Membros no ar: lista de { player, playerIndex, part, isLatest }
+    let airData = [];
 
     // === SETUP ===
     function initSetup() {
@@ -1026,6 +1126,7 @@
         players = Array.from(inputs).map((inp, i) =>
             inp.value.trim() || `Jogador ${i + 1}`
         );
+        eliminated = players.map(() => false);
         currentPlayerIndex = 0;
         history = [];
         initMatData();
@@ -1041,6 +1142,7 @@
         renderMat();
         document.getElementById('result-card').classList.remove('show');
         document.getElementById('result-player').classList.remove('show');
+        document.getElementById('result-winner').classList.remove('show');
 
         updateSpinBtnVisibility();
 
@@ -1122,7 +1224,7 @@
         toggle.classList.toggle('active', autoSpinEnabled);
         updateSpinBtnVisibility();
 
-        if (autoSpinEnabled && !isSpinning) {
+        if (autoSpinEnabled && !isSpinning && !isGameOver()) {
             startAutoSpinTimer();
         } else {
             clearAutoSpinTimer();
@@ -1130,7 +1232,7 @@
     }
 
     function updateSpinBtnVisibility() {
-        document.getElementById('spin-btn').classList.toggle('hidden', autoSpinEnabled);
+        document.getElementById('spin-btn').classList.toggle('hidden', autoSpinEnabled || isGameOver());
     }
 
     function startAutoSpinTimer() {
@@ -1182,21 +1284,92 @@
         const bar = document.getElementById('players-bar');
         bar.innerHTML = '';
         players.forEach((name, i) => {
-            const chip = document.createElement('div');
-            chip.className = 'player-chip';
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'player-chip' + (eliminated[i] ? ' eliminated' : '');
             chip.id = `chip-${i}`;
             chip.style.background = PLAYER_COLORS[i];
-            chip.textContent = name;
+            chip.textContent = (eliminated[i] ? '❌ ' : '') + name;
+            chip.title = eliminated[i] ? 'Toque para voltar ao jogo' : 'Toque para eliminar';
+            chip.onclick = () => toggleEliminated(i);
             bar.appendChild(chip);
         });
     }
 
+    function activePlayers() {
+        return players.map((_, i) => i).filter(i => !eliminated[i]);
+    }
+
+    function isGameOver() {
+        return players.length > 0 && activePlayers().length <= 1;
+    }
+
+    // Proximo jogador nao eliminado a partir de "from" (inclusive)
+    function nextActivePlayer(from) {
+        for (let k = 0; k < players.length; k++) {
+            const i = (from + k) % players.length;
+            if (!eliminated[i]) return i;
+        }
+        return from;
+    }
+
+    function toggleEliminated(i) {
+        if (isSpinning) return;
+
+        if (!eliminated[i]) {
+            if (!confirm(`Eliminar ${players[i]}?\n(caiu ou encostou joelho/cotovelo no chão)`)) return;
+            eliminated[i] = true;
+            speak(`${players[i]} foi eliminado!`);
+        } else {
+            eliminated[i] = false;
+        }
+
+        currentPlayerIndex = nextActivePlayer(currentPlayerIndex);
+        renderPlayersBar();
+        renderMatLegend();
+        renderMat();
+        updateCurrentPlayer();
+        checkGameOver();
+    }
+
+    function checkGameOver() {
+        const winnerEl = document.getElementById('result-winner');
+        updateSpinBtnVisibility();
+
+        if (!isGameOver()) {
+            winnerEl.classList.remove('show');
+            if (autoSpinEnabled && !isSpinning && !autoSpinTimer) {
+                startAutoSpinTimer();
+            }
+            return;
+        }
+
+        clearAutoSpinTimer();
+        document.getElementById('result-card').classList.remove('show');
+        document.getElementById('result-player').classList.remove('show');
+
+        const winners = activePlayers();
+        if (winners.length === 1) {
+            const name = players[winners[0]];
+            winnerEl.textContent = `🏆 ${name} venceu!`;
+            speak(`${name} venceu!`);
+            launchConfetti(PLAYER_COLORS[winners[0]]);
+        } else {
+            winnerEl.textContent = 'Todos foram eliminados!';
+        }
+        winnerEl.classList.add('show');
+    }
+
     function updateCurrentPlayer() {
         document.querySelectorAll('.player-chip').forEach(c => c.classList.remove('current'));
+        const subText = document.querySelector('.spin-sub');
+        if (isGameOver()) {
+            subText.textContent = 'Fim de jogo';
+            return;
+        }
+
         const chip = document.getElementById(`chip-${currentPlayerIndex}`);
         if (chip) chip.classList.add('current');
-
-        const subText = document.querySelector('.spin-sub');
         subText.textContent = `Vez de ${players[currentPlayerIndex]}`;
     }
 
@@ -1236,13 +1409,18 @@
             ctx.shadowColor = 'rgba(0,0,0,0.5)';
             ctx.shadowBlur = 3;
 
-            const textR = r * 0.68;
+            const textR = r * 0.66;
             ctx.fillText(seg.part.icon, textR, -4);
             ctx.font = '600 8px Nunito, sans-serif';
 
             const partName = seg.part.name.split(' ');
             ctx.fillText(partName[0], textR, 8);
             ctx.fillText(partName[1], textR, 17);
+
+            if (seg.color.icon) {
+                ctx.font = '12px sans-serif';
+                ctx.fillText(seg.color.icon, r * 0.9, 4);
+            }
 
             ctx.restore();
         });
@@ -1264,7 +1442,7 @@
 
     // === GIRAR ===
     function spin() {
-        if (isSpinning) return;
+        if (isSpinning || isGameOver()) return;
         isSpinning = true;
         clearAutoSpinTimer();
 
@@ -1295,10 +1473,10 @@
 
             addToMat(players[currentPlayerIndex], currentPlayerIndex, seg);
 
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            currentPlayerIndex = nextActivePlayer((currentPlayerIndex + 1) % players.length);
             updateCurrentPlayer();
 
-            if (autoSpinEnabled) {
+            if (autoSpinEnabled && !isGameOver()) {
                 startAutoSpinTimer();
             }
         }, 4200);
@@ -1313,7 +1491,8 @@
         const card = document.getElementById('result-card');
         document.getElementById('result-body').textContent = seg.part.icon + ' ' + seg.part.name;
         document.getElementById('result-dot').style.background = seg.color.hex;
-        document.getElementById('result-color-text').textContent = seg.color.name;
+        document.getElementById('result-color-text').textContent =
+            seg.color.icon ? `${seg.color.icon} ${seg.color.name}` : seg.color.name;
         document.getElementById('result-color-text').style.color = seg.color.hex;
 
         card.style.borderTop = `5px solid ${seg.color.hex}`;
@@ -1331,17 +1510,41 @@
         for (let r = 0; r < MAT_ROWS; r++) {
             matData.push([null, null, null, null]);
         }
+        airData = [];
     }
 
     function addToMat(playerName, playerIdx, seg) {
-        const colIdx = MAT_COLOR_INDEX[seg.color.name];
-
         // Limpar flag latest de todos
         for (let r = 0; r < MAT_ROWS; r++) {
             for (let c = 0; c < MAT_COLS; c++) {
                 if (matData[r][c]) matData[r][c].isLatest = false;
             }
         }
+        airData.forEach(a => a.isLatest = false);
+
+        // O membro sai da posicao anterior (tapete ou ar) antes de ir para a nova
+        for (let r = 0; r < MAT_ROWS; r++) {
+            for (let c = 0; c < MAT_COLS; c++) {
+                const d = matData[r][c];
+                if (d && d.playerIndex === playerIdx && d.part.name === seg.part.name) {
+                    matData[r][c] = null;
+                }
+            }
+        }
+        airData = airData.filter(a => !(a.playerIndex === playerIdx && a.part.name === seg.part.name));
+
+        if (seg.color.isAir) {
+            airData.push({
+                player: playerName,
+                playerIndex: playerIdx,
+                part: seg.part,
+                isLatest: true
+            });
+            renderMat();
+            return;
+        }
+
+        const colIdx = MAT_COLOR_INDEX[seg.color.name];
 
         // Colocar na primeira linha vazia dessa coluna (de cima para baixo)
         for (let r = 0; r < MAT_ROWS; r++) {
@@ -1367,7 +1570,37 @@
         renderMat();
     }
 
+    function renderAirZone() {
+        const zone = document.getElementById('air-zone');
+        zone.innerHTML = '';
+
+        const label = document.createElement('span');
+        label.className = 'air-zone-label';
+        label.textContent = '☁️ Ar';
+        zone.appendChild(label);
+
+        if (airData.length === 0) {
+            const empty = document.createElement('span');
+            empty.className = 'air-zone-empty';
+            empty.textContent = 'Nenhum membro no ar';
+            zone.appendChild(empty);
+            return;
+        }
+
+        airData.forEach(a => {
+            const item = document.createElement('span');
+            item.className = 'air-item';
+            if (a.isLatest) item.classList.add('latest');
+            if (eliminated[a.playerIndex]) item.classList.add('eliminated');
+            item.style.setProperty('--player-color', PLAYER_COLORS[a.playerIndex]);
+            item.textContent = `${a.part.icon} ${a.player} · ${a.part.name}`;
+            zone.appendChild(item);
+        });
+    }
+
     function renderMat() {
+        renderAirZone();
+
         const grid = document.getElementById('mat-grid');
         grid.innerHTML = '';
 
@@ -1382,6 +1615,7 @@
                     cellEl.classList.add('occupied');
                     cellEl.style.setProperty('--player-color', PLAYER_COLORS[data.playerIndex]);
                     if (data.isLatest) cellEl.classList.add('latest');
+                    if (eliminated[data.playerIndex]) cellEl.classList.add('eliminated');
 
                     const content = document.createElement('div');
                     content.className = 'mat-cell-content';
@@ -1416,7 +1650,7 @@
         legend.innerHTML = '';
         players.forEach((name, i) => {
             const item = document.createElement('div');
-            item.className = 'mat-legend-item';
+            item.className = 'mat-legend-item' + (eliminated[i] ? ' eliminated' : '');
 
             const dot = document.createElement('div');
             dot.className = 'mat-legend-dot';
