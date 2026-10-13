@@ -162,7 +162,7 @@
         .opt:hover { transform: translateY(-5px); }
         .opt.selected { border-color: #f1c40f; box-shadow: 0 0 0 4px rgba(241,196,15,.4), 0 8px 18px rgba(0,0,0,.2); }
         .opt .opt-art { display:block; height: 100px; margin-bottom: 8px; }
-        .opt .opt-art svg { height: 100%; width: 100%; }
+        .opt .opt-art img { height: 100%; width: auto; max-width: 100%; object-fit: contain; }
         .opt .opt-emoji { font-size: 3.4rem; line-height:100px; display:block; }
         .opt .opt-name { font-family: 'Fredoka One', cursive; font-size: 1.05rem; }
 
@@ -205,8 +205,10 @@
             width: 100%;
             max-width: 400px;
         }
-        #arte { width: 100%; height: auto; display:block; touch-action: manipulation; }
-        #arte .regiao { cursor: pointer; transition: fill .08s; }
+        .art-stack { display:grid; }
+        .art-stack canvas { grid-area: 1 / 1; width: 100%; height: auto; display:block; border-radius: 14px; }
+        #traco { cursor: pointer; touch-action: manipulation; }
+        .loading { color:#1c6b4a; font-family:'Fredoka One', cursive; text-align:center; padding: 60px 10px; }
 
         .palette {
             display: flex;
@@ -292,29 +294,30 @@
 
 <script>
 /* ====================== DADOS DAS ESCOLHAS ====================== */
-/* Jogadores: desenhos ORIGINAIS, reconhecíveis por cabelo/barba/número.
-   Não são cópias de fotos — são ilustrações de linha feitas para colorir. */
+/* Desenhos de linha em img/pintor/: cabeça + corpo já montados por pose
+   ({jogador}_{pose}.png), miniaturas (rosto_{jogador}.png) e objetos (obj_{objeto}.png). */
+const IMG = 'img/pintor/';
 const PLAYERS = [
-    { id:'messi',  name:'Messi',     hair:'messi',  beard:true,  num:'10' },
-    { id:'cr7',    name:'Cristiano', hair:'cr7',    beard:false, num:'7'  },
-    { id:'neymar', name:'Neymar',    hair:'neymar', beard:false, num:'10' },
-    { id:'mbappe', name:'Mbappé',    hair:'mbappe', beard:false, num:'10' },
-    { id:'dibu',   name:'Dibu Martínez', hair:'dibu', beard:true,  num:'23' },
-    { id:'yamal',  name:'Lamine Yamal',  hair:'yamal', beard:false, num:'19' },
-    { id:'kane',   name:'Harry Kane',    hair:'kane',  beard:false, num:'9'  },
-    { id:'haaland',name:'Haaland',       hair:'haaland',beard:false, num:'9'  },
+    { id:'messi',   name:'Messi',         num:'10' },
+    { id:'cr7',     name:'Cristiano',     num:'7'  },
+    { id:'neymar',  name:'Neymar',        num:'10' },
+    { id:'mbappe',  name:'Mbappé',        num:'10' },
+    { id:'dibu',    name:'Dibu Martínez', num:'23' },
+    { id:'yamal',   name:'Lamine Yamal',  num:'19' },
+    { id:'kane',    name:'Harry Kane',    num:'9'  },
+    { id:'haaland', name:'Haaland',       num:'9'  },
 ];
 const OBJECTS = [
-    { id:'trofeu',   name:'Troféu',  emoji:'🏆' },
-    { id:'bola',     name:'Bola',    emoji:'⚽' },
-    { id:'medalha',  name:'Medalha', emoji:'🥇' },
-    { id:'luva',     name:'Luvas',   emoji:'🧤' },
+    { id:'trofeu',  name:'Troféu',  emoji:'🏆' },
+    { id:'bola',    name:'Bola',    emoji:'⚽' },
+    { id:'medalha', name:'Medalha', emoji:'🥇' },
+    { id:'nenhum',  name:'Nada',    emoji:'🙌' },
 ];
 const POSES = [
     { id:'parado',      name:'Em pé',        emoji:'🧍' },
     { id:'chutando',    name:'Chutando',     emoji:'🦵' },
     { id:'comemorando', name:'Comemorando',  emoji:'🙌' },
-    { id:'goleiro',     name:'Goleiro',      emoji:'🥅' },
+    { id:'goleiro',     name:'Goleiro',      emoji:'🧤' },
 ];
 const SHIRTS = [
     { id:'lisa',      name:'Lisa',             emoji:'👕' },
@@ -323,200 +326,17 @@ const SHIRTS = [
     { id:'faixa',     name:'Faixa',            emoji:'🏳️' },
 ];
 
-const POSE_ANGLES = {
-    parado:      { armL:8,    armR:-8,   legL:4,   legR:-4  },
-    chutando:    { armL:26,   armR:-20,  legL:6,   legR:-55 },
-    comemorando: { armL:148,  armR:-148, legL:4,   legR:-4  },
-    goleiro:     { armL:76,   armR:-76,  legL:20,  legR:-20 },
+/* tamanho de cada desenho e um ponto dentro da camisa (para achar a área do peito) */
+const POSE_META = {
+    parado:      { w:419, h:885, seed:[210,350] },
+    chutando:    { w:813, h:884, seed:[404,391] },
+    comemorando: { w:668, h:884, seed:[334,390] },
+    goleiro:     { w:785, h:884, seed:[393,390] },
 };
-
-/* ====================== CONSTRUÇÃO DO SVG ====================== */
-function reg(cor, d){ return `<path class="regiao" data-cor="${cor}" d="${d}"/>`; }
-function regC(cor, cx, cy, r){ return `<circle class="regiao" data-cor="${cor}" cx="${cx}" cy="${cy}" r="${r}"/>`; }
-function regE(cor, cx, cy, rx, ry){ return `<ellipse class="regiao" data-cor="${cor}" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`; }
-
-/* --- cabeça, cabelo, barba e rosto (reaproveitado no preview) --- */
-function hairPath(id){
-    switch(id){
-        case 'cr7': /* curto e arrumado */
-            return 'M167,86 C165,52 186,44 200,44 C214,44 235,52 233,86 C229,70 221,62 211,60 C207,53 193,53 189,60 C179,62 171,70 167,86 Z';
-        case 'neymar': /* topete / laterais raspadas */
-            return 'M180,80 C178,50 191,40 200,40 C209,40 222,50 220,80 C217,64 213,58 207,56 C205,48 195,48 193,56 C187,58 183,64 180,80 Z';
-        case 'mbappe': /* bem curto, colado */
-            return 'M170,80 C170,54 188,46 200,46 C212,46 230,54 230,80 C226,68 218,62 210,61 C206,56 194,56 190,61 C182,62 174,68 170,80 Z';
-        case 'dibu': /* curtinho, rente */
-            return 'M168,84 C166,56 184,45 200,45 C216,45 234,56 232,84 C228,70 220,63 210,62 C204,58 196,58 190,62 C180,63 172,70 168,84 Z';
-        case 'yamal': /* cachinhos no alto, laterais baixas */
-            return 'M172,82 C168,62 172,50 180,46 C182,38 192,34 198,38 C204,32 214,34 218,42 C226,44 232,54 228,82 C224,70 218,64 210,62 C206,57 194,57 190,62 C182,64 176,70 172,82 Z';
-        case 'kane': /* curto, penteado de lado */
-            return 'M167,84 C163,54 184,42 204,42 C222,42 236,54 233,82 C230,70 224,62 214,60 C204,62 190,66 180,64 C174,68 169,76 167,84 Z';
-        case 'haaland': /* puxado pra trás, com coque no alto */
-            return 'M168,80 C166,54 184,44 200,44 C216,44 234,54 232,80 C228,66 218,58 200,58 C182,58 172,66 168,80 Z '
-                 + 'M190,46 C184,36 188,24 200,24 C212,24 216,36 210,46 C204,44 196,44 190,46 Z';
-        default: /* messi: cheio, com volume */
-            return 'M165,90 C161,52 184,42 200,42 C216,42 239,52 235,90 C232,74 224,64 215,62 C209,52 191,52 185,62 C176,64 168,74 165,90 Z';
-    }
-}
-function beardPath(){
-    return 'M172,112 C176,138 190,150 200,150 C210,150 224,138 228,112 '
-         + 'C224,124 214,130 200,130 C186,130 176,124 172,112 Z';
-}
-function faceFeatures(){
-    /* traços finos do rosto (não são áreas de pintar) */
-    return `<g fill="none" stroke="#2b2b2b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M178,90 Q187,85 196,90"/>
-        <path d="M204,90 Q213,85 222,90"/>
-        <path d="M180,99 Q188,94 196,99 Q188,103 180,99 Z"/>
-        <path d="M204,99 Q212,94 220,99 Q212,103 204,99 Z"/>
-        <path d="M200,100 L196,114 Q200,117 205,114"/>
-        <path d="M188,126 Q200,133 212,126"/>
-      </g>
-      <circle cx="188" cy="99" r="2.4" fill="#2b2b2b"/>
-      <circle cx="212" cy="99" r="2.4" fill="#2b2b2b"/>`;
-}
-function headGroup(p){
-    const face = reg('pele', 'M168,72 C168,48 188,40 200,40 C212,40 232,48 232,72 '
-        + 'C232,94 230,108 222,120 C215,132 207,140 200,140 C193,140 185,132 178,120 '
-        + 'C170,108 168,94 168,72 Z');
-    const earL = reg('pele', 'M168,92 C160,90 158,104 166,108 C170,109 172,106 172,102 Z');
-    const earR = reg('pele', 'M232,92 C240,90 242,104 234,108 C230,109 228,106 228,102 Z');
-    const hair = reg('cabelo', hairPath(p.hair));
-    const beard = p.beard ? reg('cabelo', beardPath()) : '';
-    return face + earL + earR + hair + beard + faceFeatures();
-}
-
-/* --- braços e pernas (rotacionados conforme a pose) --- */
-function armGroup(px, py, angle, glove){
-    const hand = glove
-        ? reg('luva', `M${px-13},${py+150} C${px-18},${py+166} ${px-9},${py+180} ${px},${py+180} `
-                    + `C${px+9},${py+180} ${px+18},${py+166} ${px+13},${py+150} Z`)
-          + reg('luva', `M${px-13},${py+150} L${px+13},${py+150} L${px+12},${py+158} L${px-12},${py+158} Z`)
-        : reg('pele', `M${px-12},${py+150} C${px-16},${py+164} ${px-8},${py+176} ${px},${py+176} `
-                    + `C${px+8},${py+176} ${px+16},${py+164} ${px+12},${py+150} Z`);
-    return `<g transform="rotate(${angle} ${px} ${py})">`
-        + reg('pele', `M${px-12},${py} C${px-13},${py} ${px-14},${py+4} ${px-14},${py+9} `
-            + `L${px-11},${py+150} C${px-11},${py+157} ${px+11},${py+157} ${px+11},${py+150} `
-            + `L${px+14},${py+9} C${px+14},${py+4} ${px+13},${py} ${px+12},${py} Z`)
-        + hand
-        + '</g>';
-}
-function legGroup(px, py, angle){
-    const sb = py+200;   // topo da meia
-    const bt = sb+54;    // topo da chuteira
-    return `<g transform="rotate(${angle} ${px} ${py})">`
-        + reg('pele', `M${px-13},${py} C${px-14},${py} ${px-15},${py+6} ${px-15},${py+12} `
-            + `L${px-12},${sb} L${px+12},${sb} L${px+15},${py+12} `
-            + `C${px+15},${py+6} ${px+14},${py} ${px+13},${py} Z`)
-        + reg('meia', `M${px-12},${sb} L${px+12},${sb} L${px+13},${bt} L${px-13},${bt} Z`)
-        + reg('chuteira', `M${px-13},${bt} C${px-16},${bt+16} ${px-6},${bt+24} ${px},${bt+24} `
-            + `L${px+36},${bt+24} C${px+42},${bt+24} ${px+42},${bt+12} ${px+35},${bt+6} L${px+13},${bt} Z`)
-        + '</g>';
-}
-
-/* --- padrões da camisa (recortados no torso) --- */
-function shirtPattern(id){
-    if(id==='vertical'){
-        return reg('listra','M176,176 L188,176 L188,360 L176,360 Z')
-             + reg('listra','M196,176 L208,176 L208,360 L196,360 Z')
-             + reg('listra','M216,176 L228,176 L228,360 L216,360 Z');
-    }
-    if(id==='horizontal'){
-        return reg('listra','M150,206 L250,206 L250,228 L150,228 Z')
-             + reg('listra','M150,254 L250,254 L250,276 L150,276 Z')
-             + reg('listra','M150,302 L250,302 L250,324 L150,324 Z');
-    }
-    if(id==='faixa'){
-        return reg('faixa','M120,260 L210,160 L262,196 L172,320 Z');
-    }
-    return '';
-}
-
-/* --- objetos --- */
-function objectSVG(id){
-    const tcx = 298;
-    switch(id){
-        case 'trofeu':
-            return regE('dourado', tcx, 312, 42, 9)
-                 + reg('dourado', `M${tcx-40},312 C${tcx-40},356 ${tcx-22},374 ${tcx},374 C${tcx+22},374 ${tcx+40},356 ${tcx+40},312 Z`)
-                 + reg('dourado', `M${tcx-38},318 C${tcx-66},316 ${tcx-66},354 ${tcx-44},358 L${tcx-43},349 C${tcx-58},346 ${tcx-57},325 ${tcx-38},327 Z`)
-                 + reg('dourado', `M${tcx+38},318 C${tcx+66},316 ${tcx+66},354 ${tcx+44},358 L${tcx+43},349 C${tcx+58},346 ${tcx+57},325 ${tcx+38},327 Z`)
-                 + reg('dourado', `M${tcx-7},374 L${tcx+7},374 L${tcx+6},392 L${tcx-6},392 Z`)
-                 + regE('dourado', tcx, 396, 14, 7)
-                 + reg('dourado', `M${tcx-30},401 L${tcx+30},401 L${tcx+30},408 L${tcx-30},408 Z`)
-                 + reg('castanho', `M${tcx-26},408 L${tcx+26},408 L${tcx+30},436 C${tcx+30},442 ${tcx+25},444 ${tcx+19},444 L${tcx-19},444 C${tcx-25},444 ${tcx-30},442 ${tcx-30},436 Z`);
-        case 'bola':
-            return regC('branco', 200, 706, 36)
-                 + reg('preto', 'M200,684 L214,694 L208,710 L192,710 L186,694 Z')
-                 + reg('preto', 'M168,698 L180,694 L186,706 L176,714 Z')
-                 + reg('preto', 'M232,698 L220,694 L214,706 L224,714 Z')
-                 + reg('preto', 'M196,730 L204,730 L208,740 L192,740 Z');
-        case 'medalha':
-            return reg('fita', 'M186,150 L196,150 L207,222 L197,222 Z')
-                 + reg('fita', 'M214,150 L204,150 L193,222 L203,222 Z')
-                 + regC('dourado', 200, 246, 27)
-                 + reg('estrela', 'M200,231 L204,242 L216,242 L206,249 L210,260 L200,253 L190,260 L194,249 L184,242 L196,242 Z');
-        default: return ''; // luva é desenhada nas mãos
-    }
-}
-
-function buildSVG(cfg){
-    const p = PLAYERS.find(x=>x.id===cfg.player) || PLAYERS[0];
-    const A = POSE_ANGLES[cfg.pose];
-    const glove = cfg.object === 'luva';
-
-    const legL = legGroup(186, 422, A.legL);
-    const legR = legGroup(214, 422, A.legR);
-    const armL = armGroup(160, 196, A.armL, glove);
-    const armR = armGroup(240, 196, A.armR, glove);
-
-    const shorts = reg('calcao', 'M168,358 L232,358 L240,432 L210,432 L200,394 L190,432 L160,432 Z');
-    const neck   = reg('pele', 'M190,134 L210,134 L213,174 L187,174 Z');
-    const torsoD = 'M158,176 C150,176 150,182 150,188 L150,212 C150,216 148,218 146,220 L160,240 '
-                 + 'C162,236 164,234 166,234 L168,352 C168,358 172,361 178,361 L222,361 '
-                 + 'C228,361 232,358 232,352 L234,234 C236,234 238,236 240,240 L254,220 '
-                 + 'C252,218 250,216 250,212 L250,188 C250,182 250,176 242,176 '
-                 + 'C234,176 230,180 222,182 L214,184 C208,186 192,186 186,184 L178,182 '
-                 + 'C170,180 166,176 158,176 Z';
-    const torso  = reg('camisa', torsoD);
-    const collar = reg('camisa', 'M186,184 L200,198 L214,184 L209,176 L200,186 L191,176 Z');
-    const pattern = `<g clip-path="url(#torsoClip)">${shirtPattern(cfg.shirt)}</g>`;
-    const numero = `<text x="200" y="286" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" `
-                 + `font-size="48" font-weight="bold" fill="none" stroke="#2b2b2b" stroke-width="1.6">${cfg.number || p.num}</text>`;
-    const sleeveSeams = `<g fill="none" stroke="#222" stroke-width="2">`
-                 + `<path d="M166,234 L160,240"/><path d="M234,234 L240,240"/></g>`;
-
-    return `
-      <svg id="arte" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 770">
-        <defs>
-          <clipPath id="torsoClip"><path d="${torsoD}"/></clipPath>
-        </defs>
-        <style>
-          #arte .regiao{ fill:#ffffff; stroke:#222; stroke-width:2.6; stroke-linejoin:round; }
-        </style>
-        ${legL}${legR}
-        ${shorts}
-        ${neck}
-        ${torso}${collar}${pattern}${sleeveSeams}${numero}
-        ${armL}${armR}
-        ${headGroup(p)}
-        ${objectSVG(cfg.object)}
-      </svg>`;
-}
 
 /* miniatura do rosto do jogador para o passo de escolha */
 function miniPlayer(p){
-    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <style>
-          .mp-pele{ fill:#ffe0bd; stroke:#222; stroke-width:3; }
-          .mp-cab{ fill:#5a3a22; stroke:#222; stroke-width:3; }
-        </style>
-        <g transform="translate(-200,-30) scale(1.5)">
-          <path class="mp-pele" d="M168,72 C168,48 188,40 200,40 C212,40 232,48 232,72 C232,94 230,108 222,120 C215,132 207,140 200,140 C193,140 185,132 178,120 C170,108 168,94 168,72 Z"/>
-          <path class="mp-cab" d="${hairPath(p.hair)}"/>
-          ${p.beard ? `<path class="mp-cab" d="${beardPath()}"/>` : ''}
-          ${faceFeatures()}
-        </g>
-    </svg>`;
+    return `<img src="${IMG}rosto_${p.id}.png" alt="" loading="lazy">`;
 }
 
 /* ====================== PALETA DE CORES ====================== */
@@ -545,7 +365,7 @@ const PALETTE = [
 /* ====================== ESTADO E FLUXO ====================== */
 const STEPS = [
     { key:'player', title:'1. Escolha o craque', sub:'Qual jogador você quer pintar?', list:PLAYERS, kind:'player' },
-    { key:'object', title:'2. Escolha um objeto', sub:'O que o craque vai segurar?', list:OBJECTS, kind:'emoji' },
+    { key:'object', title:'2. Escolha um objeto', sub:'O que vai aparecer junto do craque?', list:OBJECTS, kind:'emoji' },
     { key:'pose',   title:'3. Escolha a pose',    sub:'Como ele vai posar?', list:POSES, kind:'emoji' },
     { key:'shirt',  title:'4. Escolha a camisa',  sub:'Qual o estilo da camisa?', list:SHIRTS, kind:'emoji' },
     { key:'number', title:'5. Escolha o número',  sub:'Qual número vai na camisa? (1 a 99)', kind:'number' },
@@ -661,17 +481,192 @@ function goBack(){
 }
 
 /* ====================== PINTURA ====================== */
-function startPainting(){
-    $('arte-holder').innerHTML = buildSVG(cfg);
-    const svg = $('arte');
-    svg.addEventListener('pointerdown', e=>{
-        const t = e.target;
-        if(t.classList && t.classList.contains('regiao')){
-            t.style.fill = selectedColor;
-        }
+/* Duas camadas: #cor (as tintas) e, por cima, #traco (só as linhas pretas).
+   Tocar numa área enche de cor a região fechada pelas linhas (balde de tinta). */
+const LINE_LIMIT = 160;     // abaixo disso (0-255) o pixel é linha
+let lineMask = null, colorCtx = null, artW = 0, artH = 0;
+
+function loadImg(src){
+    return new Promise((ok, fail)=>{
+        const i = new Image();
+        i.onload = ()=>ok(i);
+        i.onerror = ()=>fail(new Error(src));
+        i.src = src;
+    });
+}
+
+function maskFrom(ctx){
+    const d = ctx.getImageData(0, 0, artW, artH).data;
+    const m = new Uint8Array(artW*artH);
+    for(let i=0, p=0; i<m.length; i++, p+=4) m[i] = d[p] < LINE_LIMIT ? 1 : 0;
+    return m;
+}
+
+/* região fechada (sem linhas) que contém o ponto i */
+function regionAt(mask, start){
+    const seen = new Uint8Array(mask.length);
+    const out = [];
+    if(mask[start]) return { seen, out };
+    const stack = [start]; seen[start] = 1;
+    while(stack.length){
+        const i = stack.pop(); out.push(i);
+        const x = i % artW;
+        if(x > 0        && !seen[i-1]    && !mask[i-1])    { seen[i-1] = 1;    stack.push(i-1); }
+        if(x < artW-1   && !seen[i+1]    && !mask[i+1])    { seen[i+1] = 1;    stack.push(i+1); }
+        if(i >= artW    && !seen[i-artW] && !mask[i-artW]) { seen[i-artW] = 1; stack.push(i-artW); }
+        if(i < mask.length-artW && !seen[i+artW] && !mask[i+artW]) { seen[i+artW] = 1; stack.push(i+artW); }
+    }
+    return { seen, out };
+}
+
+/* listras, faixa e número desenhados só dentro do peito da camisa */
+function drawShirtDetails(ctx, pose){
+    const meta = POSE_META[pose];
+    const mask = maskFrom(ctx);
+    const { seen, out } = regionAt(mask, meta.seed[1]*artW + meta.seed[0]);
+    if(!out.length) return;
+    let x0=artW, x1=0, y0=artH, y1=0;
+    for(const i of out){
+        const x = i % artW, y = (i / artW) | 0;
+        if(x<x0) x0=x; if(x>x1) x1=x; if(y<y0) y0=y; if(y>y1) y1=y;
+    }
+    const tw = x1-x0, th = y1-y0;
+    const layer = document.createElement('canvas');
+    layer.width = artW; layer.height = artH;
+    const g = layer.getContext('2d');
+    g.strokeStyle = '#222'; g.lineWidth = 5; g.lineCap = 'round';
+    const line = (ax,ay,bx,by)=>{ g.beginPath(); g.moveTo(ax,ay); g.lineTo(bx,by); g.stroke(); };
+    if(cfg.shirt==='vertical'){
+        const w = tw/7;
+        for(const k of [1,3,5]){ line(x0+w*k, y0, x0+w*k, y1); line(x0+w*(k+1), y0, x0+w*(k+1), y1); }
+    } else if(cfg.shirt==='horizontal'){
+        const h = th/7;
+        for(const k of [1,3,5]){ line(x0, y0+h*k, x1, y0+h*k); line(x0, y0+h*(k+1), x1, y0+h*(k+1)); }
+    } else if(cfg.shirt==='faixa'){
+        const off = tw*0.16;
+        line(x0-off, y0, x1-off, y1); line(x0+off, y0, x1+off, y1);
+    }
+    /* número: apaga o que estiver por baixo e desenha só o contorno */
+    const num = cfg.number || '10';
+    const size = Math.round(Math.min(tw*0.45, th*0.55));
+    g.font = `${size}px 'Fredoka One', 'Arial Black', sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    const nx = (x0+x1)/2, ny = y0 + th*0.5;
+    g.globalCompositeOperation = 'destination-out';
+    g.fillText(num, nx, ny);
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = '#fff'; g.fillText(num, nx, ny);
+    g.lineWidth = 4; g.lineJoin = 'round'; g.strokeText(num, nx, ny);
+    /* recorta a camada no formato do peito */
+    const ld = g.getImageData(0, 0, artW, artH);
+    for(let i=0; i<seen.length; i++) if(!seen[i]) ld.data[i*4+3] = 0;
+    g.putImageData(ld, 0, 0);
+    ctx.drawImage(layer, 0, 0);
+}
+
+async function startPainting(){
+    const meta = POSE_META[cfg.pose];
+    const hasObj = cfg.object && cfg.object !== 'nenhum';
+    const slot = hasObj ? Math.round(meta.h*0.34) : 0;
+    artW = meta.w + slot; artH = meta.h;
+
+    const holder = $('arte-holder');
+    holder.innerHTML = '<p class="loading">Carregando o desenho… ⚽</p>';
+    show('screen-paint');
+
+    let body, obj;
+    try {
+        [body, obj] = await Promise.all([
+            loadImg(`${IMG}${cfg.player}_${cfg.pose}.png`),
+            hasObj ? loadImg(`${IMG}obj_${cfg.object}.png`) : null,
+        ]);
+        if(document.fonts) await document.fonts.load(`80px 'Fredoka One'`).catch(()=>{});
+    } catch(e) {
+        holder.innerHTML = '<p class="loading">Não consegui carregar o desenho 😢</p>';
+        return;
+    }
+
+    /* camada de linhas: desenho em branco e preto */
+    const work = document.createElement('canvas');
+    work.width = artW; work.height = artH;
+    const w = work.getContext('2d', { willReadFrequently:true });
+    w.fillStyle = '#fff'; w.fillRect(0, 0, artW, artH);
+    w.drawImage(body, 0, 0);
+    if(obj){
+        const bw = slot*0.9, bh = artH*0.4;
+        const k = Math.min(bw/obj.width, bh/obj.height);
+        const ow = obj.width*k, oh = obj.height*k;
+        w.drawImage(obj, meta.w + (slot-ow)/2, artH - oh - 24, ow, oh);
+    }
+    drawShirtDetails(w, cfg.pose);
+    lineMask = maskFrom(w);
+
+    /* transforma em linhas pretas sobre fundo transparente */
+    const id = w.getImageData(0, 0, artW, artH);
+    for(let p=0; p<id.data.length; p+=4){
+        const a = 255 - id.data[p];
+        id.data[p] = id.data[p+1] = id.data[p+2] = 0;
+        id.data[p+3] = a < 18 ? 0 : a;
+    }
+
+    holder.innerHTML = `<div class="art-stack">
+        <canvas id="cor" width="${artW}" height="${artH}"></canvas>
+        <canvas id="traco" width="${artW}" height="${artH}"></canvas></div>`;
+    $('traco').getContext('2d').putImageData(id, 0, 0);
+    colorCtx = $('cor').getContext('2d', { willReadFrequently:true });
+    colorCtx.fillStyle = '#fff'; colorCtx.fillRect(0, 0, artW, artH);
+    fitArt();
+
+    $('traco').addEventListener('pointerdown', e=>{
+        const r = e.currentTarget.getBoundingClientRect();
+        const x = Math.floor((e.clientX - r.left) * artW / r.width);
+        const y = Math.floor((e.clientY - r.top) * artH / r.height);
+        fillAt(x, y, selectedColor);
     });
     renderPalette();
-    show('screen-paint');
+}
+
+/* tamanho na tela: cabe na largura do cartão e em ~65% da altura da tela */
+function fitArt(){
+    const card = document.querySelector('.canvas-card');
+    const maxH = Math.max(320, window.innerHeight*0.65);
+    card.style.maxWidth = Math.round(Math.min(560, maxH*artW/artH)) + 'px';
+}
+
+function fillAt(x, y, hex){
+    if(!lineMask || x<0 || y<0 || x>=artW || y>=artH) return;
+    let start = y*artW + x;
+    if(lineMask[start]){
+        /* tocou bem na linha: usa o vizinho livre mais próximo */
+        let best = -1;
+        for(let r=1; r<=8 && best<0; r++)
+            for(let dy=-r; dy<=r && best<0; dy++)
+                for(let dx=-r; dx<=r; dx++){
+                    const xx=x+dx, yy=y+dy;
+                    if(xx>=0 && yy>=0 && xx<artW && yy<artH && !lineMask[yy*artW+xx]){ best = yy*artW+xx; break; }
+                }
+        if(best<0) return;
+        start = best;
+    }
+    const { seen, out } = regionAt(lineMask, start);
+    /* avança 2px por baixo das linhas para não sobrar borda branca */
+    let edge = out;
+    for(let pass=0; pass<2; pass++){
+        const next = [];
+        for(const i of edge){
+            const xx = i % artW;
+            const nb = [xx>0 ? i-1 : -1, xx<artW-1 ? i+1 : -1, i-artW, i+artW];
+            for(const n of nb){
+                if(n>=0 && n<seen.length && !seen[n] && lineMask[n]){ seen[n] = 1; next.push(n); }
+            }
+        }
+        out.push(...next); edge = next;
+    }
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    const img = colorCtx.getImageData(0, 0, artW, artH);
+    const d = img.data;
+    for(const i of out){ const p=i*4; d[p]=r; d[p+1]=g; d[p+2]=b; d[p+3]=255; }
+    colorCtx.putImageData(img, 0, 0);
 }
 
 function renderPalette(){
@@ -692,41 +687,31 @@ function renderPalette(){
 }
 
 function clearAll(){
-    $('arte').querySelectorAll('.regiao').forEach(r=>{ r.style.fill = '#ffffff'; });
+    if(!colorCtx) return;
+    colorCtx.fillStyle = '#fff'; colorCtx.fillRect(0, 0, artW, artH);
 }
 
 function saveImage(){
-    const svg = $('arte');
-    const data = new XMLSerializer().serializeToString(svg);
-    const img = new Image();
-    const svgBlob = new Blob([data], {type:'image/svg+xml;charset=utf-8'});
-    const url = URL.createObjectURL(svgBlob);
-    img.onload = ()=>{
-        const scale = 2;
-        const canvas = document.createElement('canvas');
-        canvas.width = 400*scale;
-        canvas.height = 770*scale;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img,0,0,canvas.width,canvas.height);
-        URL.revokeObjectURL(url);
-        canvas.toBlob(blob=>{
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'meu-craque.png';
-            a.click();
-            setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-        });
-    };
-    img.onerror = ()=>{ URL.revokeObjectURL(url); alert('Não consegui salvar a imagem 😢'); };
-    img.src = url;
+    if(!colorCtx) return;
+    const out = document.createElement('canvas');
+    out.width = artW; out.height = artH;
+    const ctx = out.getContext('2d');
+    ctx.drawImage($('cor'), 0, 0);
+    ctx.drawImage($('traco'), 0, 0);
+    out.toBlob(blob=>{
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'meu-craque.png';
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    });
 }
 
 /* ====================== LIGAÇÕES ====================== */
 $('btn-start').addEventListener('click', ()=>{ stepIndex=0; renderStep(); show('screen-wizard'); });
 $('btn-next').addEventListener('click', goNext);
 $('btn-back').addEventListener('click', goBack);
+window.addEventListener('resize', ()=>{ if(lineMask) fitArt(); });
 $('btn-remake').addEventListener('click', ()=>{ stepIndex=0; renderStep(); show('screen-wizard'); });
 $('btn-clear').addEventListener('click', clearAll);
 $('btn-save').addEventListener('click', saveImage);
