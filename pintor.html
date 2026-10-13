@@ -302,6 +302,7 @@ const PLAYERS = [
     { id:'dibu',   name:'Dibu Martínez', hair:'dibu', beard:true,  num:'23' },
     { id:'yamal',  name:'Lamine Yamal',  hair:'yamal', beard:false, num:'19' },
     { id:'kane',   name:'Harry Kane',    hair:'kane',  beard:false, num:'9'  },
+    { id:'haaland',name:'Haaland',       hair:'haaland',beard:false, num:'9'  },
 ];
 const OBJECTS = [
     { id:'trofeu',   name:'Troféu',  emoji:'🏆' },
@@ -349,6 +350,9 @@ function hairPath(id){
             return 'M172,82 C168,62 172,50 180,46 C182,38 192,34 198,38 C204,32 214,34 218,42 C226,44 232,54 228,82 C224,70 218,64 210,62 C206,57 194,57 190,62 C182,64 176,70 172,82 Z';
         case 'kane': /* curto, penteado de lado */
             return 'M167,84 C163,54 184,42 204,42 C222,42 236,54 233,82 C230,70 224,62 214,60 C204,62 190,66 180,64 C174,68 169,76 167,84 Z';
+        case 'haaland': /* puxado pra trás, com coque no alto */
+            return 'M168,80 C166,54 184,44 200,44 C216,44 234,54 232,80 C228,66 218,58 200,58 C182,58 172,66 168,80 Z '
+                 + 'M190,46 C184,36 188,24 200,24 C212,24 216,36 210,46 C204,44 196,44 190,46 Z';
         default: /* messi: cheio, com volume */
             return 'M165,90 C161,52 184,42 200,42 C216,42 239,52 235,90 C232,74 224,64 215,62 C209,52 191,52 185,62 C176,64 168,74 165,90 Z';
     }
@@ -506,7 +510,7 @@ function miniPlayer(p){
           .mp-pele{ fill:#ffe0bd; stroke:#222; stroke-width:3; }
           .mp-cab{ fill:#5a3a22; stroke:#222; stroke-width:3; }
         </style>
-        <g transform="translate(-220,-46) scale(1.6)">
+        <g transform="translate(-200,-30) scale(1.5)">
           <path class="mp-pele" d="M168,72 C168,48 188,40 200,40 C212,40 232,48 232,72 C232,94 230,108 222,120 C215,132 207,140 200,140 C193,140 185,132 178,120 C170,108 168,94 168,72 Z"/>
           <path class="mp-cab" d="${hairPath(p.hair)}"/>
           ${p.beard ? `<path class="mp-cab" d="${beardPath()}"/>` : ''}
