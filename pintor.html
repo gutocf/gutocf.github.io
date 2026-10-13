@@ -166,6 +166,26 @@
         .opt .opt-emoji { font-size: 3.4rem; line-height:100px; display:block; }
         .opt .opt-name { font-family: 'Fredoka One', cursive; font-size: 1.05rem; }
 
+        .options.number-mode { display:flex; flex-direction:column; align-items:center; gap:18px; }
+        .num-picker { display:flex; align-items:center; gap:14px; }
+        .num-step {
+            font-family: 'Fredoka One', cursive; font-size: 2.2rem; width: 64px; height: 64px;
+            border: none; border-radius: 50%; cursor: pointer; color: #11998e; background: #fff;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+        }
+        .num-input {
+            font-family: 'Fredoka One', cursive; font-size: 4rem; width: 150px; text-align: center;
+            color: #1c6b4a; background: rgba(255,255,255,0.95); border: 4px solid #f1c40f;
+            border-radius: 20px; padding: 6px 0; outline: none;
+        }
+        .num-quick { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+        .num-chip {
+            font-family: 'Fredoka One', cursive; font-size: 1.3rem; min-width: 56px; padding: 10px 12px;
+            border: 3px solid transparent; border-radius: 14px; cursor: pointer;
+            color: #1c6b4a; background: rgba(255,255,255,0.95);
+        }
+        .num-chip.selected { border-color: #f1c40f; }
+
         .nav-row { display:flex; gap:14px; align-items:center; }
 
         /* === COLORING SCREEN === */
@@ -279,6 +299,9 @@ const PLAYERS = [
     { id:'cr7',    name:'Cristiano', hair:'cr7',    beard:false, num:'7'  },
     { id:'neymar', name:'Neymar',    hair:'neymar', beard:false, num:'10' },
     { id:'mbappe', name:'Mbappé',    hair:'mbappe', beard:false, num:'10' },
+    { id:'dibu',   name:'Dibu Martínez', hair:'dibu', beard:true,  num:'23' },
+    { id:'yamal',  name:'Lamine Yamal',  hair:'yamal', beard:false, num:'19' },
+    { id:'kane',   name:'Harry Kane',    hair:'kane',  beard:false, num:'9'  },
 ];
 const OBJECTS = [
     { id:'trofeu',   name:'Troféu',  emoji:'🏆' },
@@ -320,6 +343,12 @@ function hairPath(id){
             return 'M180,80 C178,50 191,40 200,40 C209,40 222,50 220,80 C217,64 213,58 207,56 C205,48 195,48 193,56 C187,58 183,64 180,80 Z';
         case 'mbappe': /* bem curto, colado */
             return 'M170,80 C170,54 188,46 200,46 C212,46 230,54 230,80 C226,68 218,62 210,61 C206,56 194,56 190,61 C182,62 174,68 170,80 Z';
+        case 'dibu': /* curtinho, rente */
+            return 'M168,84 C166,56 184,45 200,45 C216,45 234,56 232,84 C228,70 220,63 210,62 C204,58 196,58 190,62 C180,63 172,70 168,84 Z';
+        case 'yamal': /* cachinhos no alto, laterais baixas */
+            return 'M172,82 C168,62 172,50 180,46 C182,38 192,34 198,38 C204,32 214,34 218,42 C226,44 232,54 228,82 C224,70 218,64 210,62 C206,57 194,57 190,62 C182,64 176,70 172,82 Z';
+        case 'kane': /* curto, penteado de lado */
+            return 'M167,84 C163,54 184,42 204,42 C222,42 236,54 233,82 C230,70 224,62 214,60 C204,62 190,66 180,64 C174,68 169,76 167,84 Z';
         default: /* messi: cheio, com volume */
             return 'M165,90 C161,52 184,42 200,42 C216,42 239,52 235,90 C232,74 224,64 215,62 C209,52 191,52 185,62 C176,64 168,74 165,90 Z';
     }
@@ -448,7 +477,7 @@ function buildSVG(cfg){
     const collar = reg('camisa', 'M186,184 L200,198 L214,184 L209,176 L200,186 L191,176 Z');
     const pattern = `<g clip-path="url(#torsoClip)">${shirtPattern(cfg.shirt)}</g>`;
     const numero = `<text x="200" y="286" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" `
-                 + `font-size="48" font-weight="bold" fill="none" stroke="#2b2b2b" stroke-width="1.6">${p.num}</text>`;
+                 + `font-size="48" font-weight="bold" fill="none" stroke="#2b2b2b" stroke-width="1.6">${cfg.number || p.num}</text>`;
     const sleeveSeams = `<g fill="none" stroke="#222" stroke-width="2">`
                  + `<path d="M166,234 L160,240"/><path d="M234,234 L240,240"/></g>`;
 
@@ -477,7 +506,7 @@ function miniPlayer(p){
           .mp-pele{ fill:#ffe0bd; stroke:#222; stroke-width:3; }
           .mp-cab{ fill:#5a3a22; stroke:#222; stroke-width:3; }
         </style>
-        <g transform="translate(-100,-22) scale(1.6)">
+        <g transform="translate(-220,-46) scale(1.6)">
           <path class="mp-pele" d="M168,72 C168,48 188,40 200,40 C212,40 232,48 232,72 C232,94 230,108 222,120 C215,132 207,140 200,140 C193,140 185,132 178,120 C170,108 168,94 168,72 Z"/>
           <path class="mp-cab" d="${hairPath(p.hair)}"/>
           ${p.beard ? `<path class="mp-cab" d="${beardPath()}"/>` : ''}
@@ -514,10 +543,12 @@ const STEPS = [
     { key:'player', title:'1. Escolha o craque', sub:'Qual jogador você quer pintar?', list:PLAYERS, kind:'player' },
     { key:'object', title:'2. Escolha um objeto', sub:'O que o craque vai segurar?', list:OBJECTS, kind:'emoji' },
     { key:'pose',   title:'3. Escolha a pose',    sub:'Como ele vai posar?', list:POSES, kind:'emoji' },
-    { key:'shirt',  title:'4. Escolha a camisa',  sub:'Pronto pra pintar depois!', list:SHIRTS, kind:'emoji' },
+    { key:'shirt',  title:'4. Escolha a camisa',  sub:'Qual o estilo da camisa?', list:SHIRTS, kind:'emoji' },
+    { key:'number', title:'5. Escolha o número',  sub:'Qual número vai na camisa? (1 a 99)', kind:'number' },
 ];
+const QUICK_NUMBERS = ['1','7','9','10','11','23'];
 
-const cfg = { player:null, object:null, pose:null, shirt:null };
+const cfg = { player:null, object:null, pose:null, shirt:null, number:null };
 let stepIndex = 0;
 let selectedColor = '#e74c3c';
 
@@ -540,6 +571,8 @@ function renderStep(){
     $('step-title').textContent = step.title;
     $('step-sub').textContent = step.sub;
     renderDots();
+    if(step.kind==='number'){ renderNumberStep(); return; }
+    $('options').classList.remove('number-mode');
     const current = cfg[step.key];
     $('options').innerHTML = step.list.map(o=>{
         const art = step.kind==='player'
@@ -551,12 +584,54 @@ function renderStep(){
     $('options').querySelectorAll('.opt').forEach(el=>{
         el.addEventListener('click', ()=>{
             cfg[step.key] = el.dataset.id;
+            if(step.key==='player') cfg.number = PLAYERS.find(p=>p.id===el.dataset.id).num;
             renderStep();
             updateNext();
         });
     });
     $('btn-back').textContent = stepIndex===0 ? '◂ Voltar' : '◂ Anterior';
     $('btn-next').textContent = stepIndex===STEPS.length-1 ? 'Pintar! 🎨' : 'Próximo ▸';
+    updateNext();
+}
+
+function validNumber(v){ return /^\d{1,2}$/.test(v||'') && +v>=1 && +v<=99; }
+
+function renderNumberStep(){
+    const box = $('options');
+    box.classList.add('number-mode');
+    const quick = [...new Set([PLAYERS.find(p=>p.id===cfg.player)?.num, ...QUICK_NUMBERS].filter(Boolean))];
+    box.innerHTML = `
+        <div class="num-picker">
+            <button class="num-step" id="num-minus" aria-label="Diminuir">−</button>
+            <input id="num-input" class="num-input" type="text" inputmode="numeric" maxlength="2"
+                   aria-label="Número da camisa" value="${cfg.number || ''}">
+            <button class="num-step" id="num-plus" aria-label="Aumentar">+</button>
+        </div>
+        <div class="num-quick">${quick.map(n=>
+            `<button class="num-chip${cfg.number===n?' selected':''}" data-n="${n}">${n}</button>`).join('')}</div>`;
+    const input = $('num-input');
+    const set = v => {
+        cfg.number = validNumber(v) ? String(+v) : null;
+        box.querySelectorAll('.num-chip').forEach(c=>c.classList.toggle('selected', c.dataset.n===cfg.number));
+        updateNext();
+    };
+    input.addEventListener('input', ()=>{
+        input.value = input.value.replace(/\D/g,'').slice(0,2);
+        set(input.value);
+    });
+    const bump = d => {
+        const n = Math.min(99, Math.max(1, (+cfg.number || 0) + d));
+        input.value = n;
+        set(String(n));
+    };
+    $('num-minus').addEventListener('click', ()=>bump(-1));
+    $('num-plus').addEventListener('click', ()=>bump(1));
+    box.querySelectorAll('.num-chip').forEach(c=>c.addEventListener('click', ()=>{
+        input.value = c.dataset.n;
+        set(c.dataset.n);
+    }));
+    $('btn-back').textContent = '◂ Anterior';
+    $('btn-next').textContent = 'Pintar! 🎨';
     updateNext();
 }
 
