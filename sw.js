@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jogos-do-vitor-v4';
+const CACHE_NAME = 'jogos-do-vitor-v5';
 const ASSETS = [
   '/',
   '/index.html',
